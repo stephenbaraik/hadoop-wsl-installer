@@ -7,6 +7,102 @@
 
 A **robust, one-click Hadoop installation script** for Windows Subsystem for Linux (WSL2). This installer sets up a complete single-node Hadoop cluster with all services running and web UIs accessible from your Windows browser.
 
+## 🚀 Step-by-Step Hadoop Installation for Ubuntu WSL
+
+### 1. Prerequisites
+
+- Windows 10/11 with WSL2 enabled
+- Ubuntu 20.04+ or Debian 11+ installed in WSL2
+- At least 4GB RAM recommended
+- Internet connection
+
+### 2. Clone the Repository
+
+Open Ubuntu WSL and run:
+
+```bash
+git clone https://github.com/stephenbaraik/hadoop-wsl-installer.git
+cd hadoop-wsl-installer
+```
+
+### 3. Run the Installer
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+The script will:
+- Install Java, SSH, and required tools
+- Download and configure Hadoop
+- Set up passwordless SSH
+- Configure environment variables
+- Start all Hadoop services
+- Verify installation and web UIs
+
+### 4. Start/Stop/Check Hadoop Services
+
+Start all services:
+```bash
+./scripts/start-services.sh
+```
+
+Stop all services:
+```bash
+./scripts/stop-services.sh
+```
+
+Check status:
+```bash
+./scripts/status.sh
+```
+
+Run installation tests:
+```bash
+./scripts/test-installation.sh
+```
+
+### 5. Access Hadoop Web UIs
+
+Open your browser and visit:
+
+- NameNode: [http://localhost:9870](http://localhost:9870)
+- ResourceManager: [http://localhost:8088](http://localhost:8088)
+- DataNode: [http://localhost:9864](http://localhost:9864)
+- NodeManager: [http://localhost:8042](http://localhost:8042)
+- JobHistoryServer: [http://localhost:19888](http://localhost:19888)
+
+### 6. Common Hadoop Commands
+
+List files in HDFS:
+```bash
+hdfs dfs -ls /
+```
+
+Create directory:
+```bash
+hdfs dfs -mkdir /user/data
+```
+
+Upload file:
+```bash
+hdfs dfs -put localfile.txt /user/data/
+```
+
+Run MapReduce job:
+```bash
+hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar wordcount input output
+```
+
+### 7. Troubleshooting
+
+- If services don’t start, check SSH and ports
+- If web UIs aren’t accessible, check firewall and service status
+- For permission errors, fix Hadoop directory ownership
+- For memory errors, adjust heap sizes in `config/hadoop-env.sh`
+
+See below for more troubleshooting tips and details.
+
 ## ✨ Features
 
 - 🚀 **One-command installation** - Complete setup with single script execution

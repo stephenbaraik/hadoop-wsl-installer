@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Hadoop WSL Installer - Minimal Fresh Start
+# This script will be rebuilt from scratch for a robust Hadoop installation on Ubuntu WSL.
+
+echo "[INFO] This script is empty. Ready for a fresh Hadoop installer build."
+#!/bin/bash
+
 # 🐘 Hadoop WSL Installer - Complete Setup Script
 # Robust Apache Hadoop 3.4.1 Installation for Windows WSL
 # Author: Stephen Baraik
@@ -15,127 +21,67 @@ HADOOP_HOME="/opt/hadoop"
 JAVA_VERSION="11"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Colors for beautiful output
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly PURPLE='\033[0;35m'
-readonly CYAN='\033[0;36m'
-readonly WHITE='\033[1;37m'
-readonly NC='\033[0m' # No Color
+#!/bin/bash
 
-# ============================================================================
-# Logging Functions
-# ============================================================================
-log() {
-    echo -e "${GREEN}[$(date +'%H:%M:%S')] ✅ $1${NC}"
-}
+# Hadoop 3.4.1 Installer for Ubuntu WSL
+set -euo pipefail
 
-info() {
-    echo -e "${BLUE}[$(date +'%H:%M:%S')] ℹ️  $1${NC}"
-}
+HADOOP_VERSION="3.4.1"
+HADOOP_HOME="/opt/hadoop"
+JAVA_VERSION="11"
 
-warn() {
-    echo -e "${YELLOW}[$(date +'%H:%M:%S')] ⚠️  $1${NC}"
-}
+echo "\n[INFO] Hadoop $HADOOP_VERSION Installer for Ubuntu WSL"
 
-error() {
-    echo -e "${RED}[$(date +'%H:%M:%S')] ❌ $1${NC}" >&2
-    exit 1
-}
+# 1. Update and install dependencies
+echo "[STEP 1] Updating system and installing dependencies..."
+sudo apt update -y
+sudo apt install -y openjdk-11-jdk openssh-server wget curl tar net-tools
 
-step() {
-    echo -e "${PURPLE}[$(date +'%H:%M:%S')] 🚀 $1${NC}"
-}
+# 2. Set JAVA_HOME
+export JAVA_HOME="$(dirname $(dirname $(readlink -f $(which javac))))"
+echo "[INFO] JAVA_HOME set to $JAVA_HOME"
 
-success() {
-    echo -e "${GREEN}[$(date +'%H:%M:%S')] 🎉 $1${NC}"
-}
+# 3. Setup passwordless SSH
+echo "[STEP 2] Setting up passwordless SSH..."
+#!/bin/bash
 
-# ============================================================================
-# Header
-# ============================================================================
-show_header() {
-    clear
-    echo -e "${CYAN}"
-    echo "=============================================================================="
-    echo "🐘                    HADOOP WSL INSTALLER                              🐘"
-    echo "=============================================================================="
-    echo "   Apache Hadoop 3.4.1 Complete Installation for Windows WSL"
-    echo "   Includes: Java 11, SSH, HDFS, YARN, MapReduce & Web UIs"
-    echo "=============================================================================="
-    echo -e "${NC}"
-}
+# Hadoop 3.4.1 Installer for Ubuntu WSL (Clean Version)
+set -euo pipefail
 
-# ============================================================================
-# System Checks
-# ============================================================================
-check_system() {
-    step "Performing system checks..."
-    
-    # Check WSL
-    if ! grep -qE "(microsoft|WSL)" /proc/version 2>/dev/null; then
-        error "This script requires Windows WSL environment!"
-    fi
-    
-    # Check if running as root
-    if [[ $EUID -eq 0 ]]; then
-        error "Please run this script as a regular user, not as root!"
-    fi
-    
-    # Check available space (need at least 5GB)
-    local available_space=$(df / | awk 'NR==2 {print $4}')
-    if [[ $available_space -lt 5242880 ]]; then  # 5GB in KB
-        warn "Low disk space detected. At least 5GB free space recommended."
-    fi
-    
-    # Check memory (recommend at least 4GB)
-    local total_mem=$(free -m | awk 'NR==2{print $2}')
-    if [[ $total_mem -lt 4096 ]]; then
-        warn "System has less than 4GB RAM. Hadoop may run slowly."
-    fi
-    
-    log "System checks completed"
-}
+HADOOP_VERSION="3.4.1"
+HADOOP_HOME="/opt/hadoop"
 
-# ============================================================================
-# Package Management
-# ============================================================================
-update_system() {
-    step "Updating system packages..."
-    
-    export DEBIAN_FRONTEND=noninteractive
-    
-    if command -v apt >/dev/null 2>&1; then
-        sudo apt update -qq
-        sudo apt upgrade -y -qq
-        sudo apt install -y -qq \
-            wget curl vim net-tools \
-            openssh-server openssh-client \
-            openjdk-11-jdk openjdk-11-jre \
-            rsync unzip tar gzip \
-            htop tree jq
-    else
-        error "Unsupported Linux distribution. This script requires Ubuntu/Debian."
-    fi
-    
-    log "System packages updated successfully"
-}
+echo "\n[INFO] Hadoop $HADOOP_VERSION Installer for Ubuntu WSL"
 
-# ============================================================================
-# Java Setup
-# ============================================================================
-setup_java() {
-    step "Setting up Java ${JAVA_VERSION}..."
-    
-    # Set JAVA_HOME
-    if [[ -d "/usr/lib/jvm/java-11-openjdk-amd64" ]]; then
-        export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
-    elif [[ -d "/usr/lib/jvm/java-11-openjdk" ]]; then
-        export JAVA_HOME="/usr/lib/jvm/java-11-openjdk"
-    else
-        export JAVA_HOME="/usr/lib/jvm/default-java"
+# 1. Update and install dependencies
+echo "[STEP 1] Updating system and installing dependencies..."
+sudo apt update -y
+sudo apt install -y openjdk-11-jdk openssh-server wget curl tar net-tools
+
+# 2. Set JAVA_HOME
+export JAVA_HOME="$(dirname $(dirname $(readlink -f $(which javac))))"
+echo "[INFO] JAVA_HOME set to $JAVA_HOME"
+
+# 3. Setup passwordless SSH
+echo "[STEP 2] Setting up passwordless SSH..."
+sudo service ssh start
+ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa <<< y 2>/dev/null || true
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+
+# 4. Download Hadoop
+echo "[STEP 3] Downloading Hadoop $HADOOP_VERSION..."
+cd /tmp
+wget --progress=bar:force "https://archive.apache.org/dist/hadoop/common/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz"
+tar -xzf hadoop-$HADOOP_VERSION.tar.gz
+sudo mkdir -p $HADOOP_HOME
+sudo cp -r hadoop-$HADOOP_VERSION/* $HADOOP_HOME/
+sudo chown -R $USER:$USER $HADOOP_HOME
+rm -rf hadoop-$HADOOP_VERSION hadoop-$HADOOP_VERSION.tar.gz
+
+# 5. Configure Hadoop (single-node, web UIs enabled)
+echo "[STEP 4] Configuring Hadoop..."
+cat > $HADOOP_HOME/etc/hadoop/core-site.xml <<EOF
     fi
     
     # Configure alternatives
@@ -146,6 +92,8 @@ setup_java() {
     local java_version=$(java -version 2>&1 | head -n1 | cut -d'"' -f2)
     if [[ ! $java_version =~ ^11\. ]]; then
         error "Java 11 installation failed. Found version: $java_version"
+EOF
+cat > $HADOOP_HOME/etc/hadoop/hdfs-site.xml <<EOF
     fi
     
     info "Java Version: $java_version"
@@ -168,6 +116,8 @@ setup_ssh() {
     chmod 700 ~/.ssh
     
     # Generate SSH keys if they don't exist
+EOF
+cat > $HADOOP_HOME/etc/hadoop/mapred-site.xml <<EOF
     if [[ ! -f ~/.ssh/id_rsa ]]; then
         info "Generating SSH key pair..."
         ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N "" -q
@@ -182,6 +132,8 @@ setup_ssh() {
 Host localhost
     StrictHostKeyChecking no
     UserKnownHostsFile /dev/null
+EOF
+cat > $HADOOP_HOME/etc/hadoop/yarn-site.xml <<EOF
     LogLevel QUIET
     
 Host 0.0.0.0
@@ -202,14 +154,56 @@ download_with_progress() {
     local output="$2"
     local mirror_name="$(echo $url | cut -d'/' -f3)"
     
+    # Test connectivity first
+    echo -e "${BLUE}🔍 Testing connectivity to ${mirror_name}...${NC}"
+EOF
+cat > $HADOOP_HOME/etc/hadoop/hadoop-env.sh <<EOF
+    if ! wget --spider --timeout=10 "$url" 2>/dev/null; then
+        echo -e "${RED}❌ Cannot reach ${mirror_name}${NC}"
+        return 1
+
+mkdir -p $HADOOP_HOME/data/namenode $HADOOP_HOME/data/datanode $HADOOP_HOME/data/tmp $HADOOP_HOME/logs
+
+# 6. Add Hadoop to PATH and environment
+echo "[STEP 5] Adding Hadoop to PATH and environment..."
+cat >> ~/.bashrc <<EOF
+    fi
+    echo -e "${GREEN}✅ Connection verified${NC}"
+    
     # Try wget first (better for this use case)
+source ~/.bashrc
+
+# 7. Format HDFS
+echo "[STEP 6] Formatting HDFS..."
+$HADOOP_HOME/bin/hdfs namenode -format -force
+
+# 8. Start Hadoop services
+echo "[STEP 7] Starting Hadoop services..."
+$HADOOP_HOME/sbin/start-dfs.sh
+$HADOOP_HOME/sbin/start-yarn.sh
+$HADOOP_HOME/bin/mapred --daemon start historyserver
+
+echo "\n[SUCCESS] Hadoop $HADOOP_VERSION installed and all services started!"
+echo "[INFO] Web UIs:"
+echo "  NameNode:        http://localhost:9870"
+echo "  ResourceManager: http://localhost:8088"
+echo "  DataNode:        http://localhost:9864"
+echo "  NodeManager:     http://localhost:8042"
+echo "  JobHistory:      http://localhost:19888"
+
+echo "[INFO] Try these commands:"
+echo "  hdfs dfs -ls /"
+echo "  hdfs dfs -mkdir /user/data"
+echo "  hdfs dfs -put localfile.txt /user/data/"
+echo "  hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar wordcount input output"
     if command -v wget >/dev/null 2>&1; then
         echo -e "${CYAN}📥 Downloading from ${mirror_name} using wget...${NC}"
-        wget --progress=bar:force:noscroll --show-progress --timeout=30 --tries=3 -O "$output" "$url" 2>&1
+        # Use simpler wget options that work reliably in WSL
+        wget --progress=bar:force --timeout=30 --tries=3 --no-check-certificate -O "$output" "$url"
     # Fallback to curl with progress bar
     elif command -v curl >/dev/null 2>&1; then
         echo -e "${CYAN}📥 Downloading from ${mirror_name} using curl...${NC}"
-        curl -L --retry 3 --max-time 30 --progress-bar -o "$output" "$url" 2>&1
+        curl -L --retry 3 --max-time 30 --progress-bar --insecure -o "$output" "$url"
     else
         error "Neither wget nor curl is available for downloading"
     fi
@@ -239,18 +233,26 @@ download_hadoop() {
         "https://downloads.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/${hadoop_archive}"
     )
     
+    # Show download information
+    echo -e "${YELLOW}📦 Hadoop ${HADOOP_VERSION} file size: ~929MB${NC}"
+    echo -e "${YELLOW}⏱️  Estimated download time: 10-30 minutes (depending on connection)${NC}"
+    echo -e "${CYAN}💡 Download will show progress bar with speed and ETA${NC}"
+    echo
+    
     local downloaded=false
     for mirror in "${mirrors[@]}"; do
         local mirror_name="$(echo $mirror | cut -d'/' -f3)"
         info "Attempting download from: ${mirror_name}"
-        echo -e "${CYAN}📥 Downloading Hadoop ${HADOOP_VERSION} (~500MB)...${NC}"
+        echo -e "${CYAN}📥 Starting download... Please be patient, this is a large file!${NC}"
+        echo
         
         # Use enhanced download function with progress display
         if download_with_progress "$mirror" "$hadoop_archive"; then
             # Verify download integrity
-            echo -e "\n${BLUE}🔍 Verifying download integrity...${NC}"
+            echo
+            echo -e "${BLUE}🔍 Verifying download integrity...${NC}"
             if tar -tzf "$hadoop_archive" >/dev/null 2>&1; then
-                echo -e "${GREEN}✅ Download completed and verified successfully${NC}"
+                echo -e "${GREEN}✅ Download completed and verified successfully!${NC}"
                 downloaded=true
                 break
             else
