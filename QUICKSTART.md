@@ -17,9 +17,22 @@ cd hadoop-wsl-installer
 # Make scripts executable and run installer
 chmod +x install.sh scripts/*.sh
 ./install.sh
+
+# IMPORTANT: Load environment after installation
+source ~/.bashrc
 ```
 
-### 3. Service Management
+### 3. Test Installation (After loading environment)
+```bash
+# Test basic commands
+hdfs dfs -ls /
+jps
+
+# Create your user directory
+hdfs dfs -mkdir /$(whoami)
+```
+
+### 4. Service Management
 ```bash
 # Start all Hadoop services
 ./scripts/start-services.sh

@@ -367,14 +367,20 @@ echo -e "   hdfs dfs -ls /"
 echo -e "   hdfs dfs -mkdir /user/data"
 echo -e "   hdfs dfs -put file.txt /user/data/"
 echo
-echo -e "${YELLOW}🔧 Next Steps:${NC}"
-echo -e "   1. Load environment:  ${GREEN}source ~/.bashrc${NC}"
-echo -e "   2. Verify services:   ${GREEN}jps${NC}"
-echo -e "   3. Access Web UIs:    ${GREEN}Open browser and visit URLs above${NC}"
+echo -e "${YELLOW}🔧 IMPORTANT - Load Environment First:${NC}"
+echo -e "${GREEN}   source ~/.bashrc${NC}"
+echo
+echo -e "${YELLOW}🔧 Then Try These Commands:${NC}"
+echo -e "   Verify services:      ${GREEN}jps${NC}"
+echo -e "   Test HDFS:           ${GREEN}hdfs dfs -ls /${NC}"
+echo -e "   Create directory:     ${GREEN}hdfs dfs -mkdir /$(whoami)${NC}"
+echo -e "   Access Web UIs:       ${GREEN}Open browser to URLs above${NC}"
 echo
 if [[ $TESTS_PASSED -eq $TOTAL_TESTS ]]; then
     echo -e "${GREEN}✨ Installation completed successfully! All tests passed! ✨${NC}"
+    echo -e "${CYAN}💡 Remember to run: ${YELLOW}source ~/.bashrc${CYAN} to use Hadoop commands${NC}"
 else
     echo -e "${YELLOW}⚠️  Installation completed but some tests failed ($TESTS_PASSED/$TOTAL_TESTS passed)${NC}"
+    echo -e "${CYAN}💡 Remember to run: ${YELLOW}source ~/.bashrc${CYAN} to use Hadoop commands${NC}"
 fi
 echo
