@@ -86,7 +86,7 @@ verify_download() {
     fi
     
     # Check file size (should be > 300MB for Hadoop 3.4.1)
-    local file_size=$(stat -f%z "$filename" 2>/dev/null || stat -c%s "$filename" 2>/dev/null || echo "0")
+    local file_size=$(stat -c%s "$filename" 2>/dev/null || wc -c < "$filename" 2>/dev/null || echo "0")
     local min_size=314572800  # ~300MB
     
     if [ "$file_size" -lt "$min_size" ]; then
