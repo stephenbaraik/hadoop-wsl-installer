@@ -5,7 +5,7 @@ This repository provides an automated installation script for Apache Hadoop 3.4.
 ## Quick Start
 
 ```bash
-git clone https://github.com/yourusername/hadoop-wsl-installer.git
+git clone https://github.com/stephenbaraik/hadoop-wsl-installer.git
 cd hadoop-wsl-installer
 chmod +x install.sh
 chmod +x scripts/*.sh
