@@ -84,12 +84,31 @@ install_hadoop() {
     # Download Hadoop if not already present
     if [ ! -f "hadoop-${HADOOP_VERSION}.tar.gz" ]; then
         info "Downloading Hadoop ${HADOOP_VERSION}..."
-        wget -q --show-progress https://downloads.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz
+        
+        # Use the dedicated download script for faster downloads
+        chmod +x scripts/download-hadoop.sh
+        if ! ./scripts/download-hadoop.sh; then
+            error "Failed to download Hadoop. Please check your internet connection."
+            exit 1
+        fi
+    else
+        info "Hadoop archive already exists, skipping download"
+    fi
+    
+    # Verify download
+    if [ ! -f "hadoop-${HADOOP_VERSION}.tar.gz" ]; then
+        error "Hadoop archive not found after download!"
+        exit 1
     fi
     
     # Extract Hadoop
     info "Extracting Hadoop..."
-    tar -xzf hadoop-${HADOOP_VERSION}.tar.gz
+    if ! tar -xzf hadoop-${HADOOP_VERSION}.tar.gz; then
+        error "Failed to extract Hadoop archive. File may be corrupted."
+        rm -f "hadoop-${HADOOP_VERSION}.tar.gz"
+        exit 1
+    fi
+    
     mv hadoop-${HADOOP_VERSION}/* ${HADOOP_HOME}/
     rmdir hadoop-${HADOOP_VERSION}
     
