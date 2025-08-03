@@ -174,9 +174,16 @@ setup_environment() {
         info "Created backup of .bashrc"
     fi
     
-    # Add to bashrc if not already present
-    if ! grep -q "HADOOP_HOME" ~/.bashrc; then
-        cat >> ~/.bashrc << EOF
+    # Remove old Hadoop environment variables if they exist
+    if grep -q "HADOOP_HOME" ~/.bashrc; then
+        # Create temporary file without Hadoop variables
+        grep -v "HADOOP_HOME\|HADOOP_CONF_DIR\|HADOOP_MAPRED_HOME\|HADOOP_COMMON_HOME\|HADOOP_HDFS_HOME\|YARN_HOME\|HADOOP_OPTS\|# Hadoop Environment Variables\|# WSL-specific optimizations\|# --- End Hadoop Environment Variables ---" ~/.bashrc > ~/.bashrc.temp
+        mv ~/.bashrc.temp ~/.bashrc
+        info "Removed old Hadoop environment variables from ~/.bashrc"
+    fi
+    
+    # Add current Hadoop environment variables
+    cat >> ~/.bashrc << EOF
 
 # Hadoop Environment Variables (Added by hadoop-wsl-installer)
 export JAVA_HOME=${JAVA_HOME}
@@ -192,11 +199,9 @@ export PATH=\$PATH:\$HADOOP_HOME/bin:\$HADOOP_HOME/sbin
 export HADOOP_OPTS="\$HADOOP_OPTS -Djava.net.preferIPv4Stack=true"
 export HADOOP_OPTS="\$HADOOP_OPTS -Djava.security.krb5.realm=OX.AC.UK"
 export HADOOP_OPTS="\$HADOOP_OPTS -Djava.security.krb5.kdc=kdc0.ox.ac.uk:kdc1.ox.ac.uk"
+# --- End Hadoop Environment Variables ---
 EOF
-        info "Added Hadoop environment variables to ~/.bashrc"
-    else
-        info "Hadoop environment variables already present in ~/.bashrc"
-    fi
+    info "Added Hadoop environment variables to ~/.bashrc"
     
     # Source the bashrc for current session
     export JAVA_HOME=${JAVA_HOME}
@@ -226,18 +231,21 @@ format_hdfs() {
 create_services() {
     log "Creating service management scripts..."
     
+    # Get the directory where this script is located
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    
     # Make scripts executable using find to avoid wildcard issues
-    if [ -d scripts ]; then
-        find scripts -name "*.sh" -type f -exec chmod +x {} \;
+    if [ -d "$SCRIPT_DIR/scripts" ]; then
+        find "$SCRIPT_DIR/scripts" -name "*.sh" -type f -exec chmod +x {} \;
         info "Made all .sh scripts in scripts/ directory executable"
     fi
     
     # Also make the main scripts executable
-    chmod +x install.sh 2>/dev/null || true
-    chmod +x fix-permissions.sh 2>/dev/null || true
-    chmod +x validate-fixes.sh 2>/dev/null || true
-    chmod +x setup.sh 2>/dev/null || true
-    chmod +x fix-java11-compatibility.sh 2>/dev/null || true
+    chmod +x "$SCRIPT_DIR/install.sh" 2>/dev/null || true
+    chmod +x "$SCRIPT_DIR/fix-permissions.sh" 2>/dev/null || true
+    chmod +x "$SCRIPT_DIR/validate-fixes.sh" 2>/dev/null || true
+    chmod +x "$SCRIPT_DIR/setup.sh" 2>/dev/null || true
+    chmod +x "$SCRIPT_DIR/fix-java11-compatibility.sh" 2>/dev/null || true
     
     log "Service scripts made executable ✓"
 }
@@ -246,11 +254,14 @@ create_services() {
 final_setup() {
     log "Performing final setup..."
     
+    # Get the directory where this script is located
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    
     # Start services
     info "Starting Hadoop services..."
-    if [ -f scripts/start-services.sh ]; then
-        chmod +x scripts/start-services.sh 2>/dev/null || true
-        if ! ./scripts/start-services.sh; then
+    if [ -f "$SCRIPT_DIR/scripts/start-services.sh" ]; then
+        chmod +x "$SCRIPT_DIR/scripts/start-services.sh" 2>/dev/null || true
+        if ! "$SCRIPT_DIR/scripts/start-services.sh"; then
             warning "Some services may have failed to start. Continuing with tests..."
         fi
     else
@@ -263,9 +274,9 @@ final_setup() {
     
     # Run basic tests
     info "Running installation tests..."
-    if [ -f scripts/test-installation.sh ]; then
-        chmod +x scripts/test-installation.sh 2>/dev/null || true
-        if ./scripts/test-installation.sh; then
+    if [ -f "$SCRIPT_DIR/scripts/test-installation.sh" ]; then
+        chmod +x "$SCRIPT_DIR/scripts/test-installation.sh" 2>/dev/null || true
+        if "$SCRIPT_DIR/scripts/test-installation.sh"; then
             log "Installation completed successfully! ✓"
         else
             warning "Some tests failed, but installation is mostly complete"
