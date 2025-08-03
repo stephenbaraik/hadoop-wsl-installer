@@ -39,9 +39,15 @@ info() {
 
 # Check if running on WSL
 check_wsl() {
-    if ! grep -q "microsoft" /proc/version 2>/dev/null; then
+    if ! grep -q "microsoft\|WSL" /proc/version 2>/dev/null; then
         error "This script is designed for Windows WSL environment only!"
     fi
+    
+    # Check if we're in a Windows mount path and warn user
+    if [[ "$(pwd)" == /mnt/* ]]; then
+        warning "Running from Windows filesystem. For better performance, consider running from Linux filesystem (e.g., /home/$USER/)"
+    fi
+    
     log "WSL environment detected ✓"
 }
 
@@ -141,11 +147,17 @@ configure_hadoop() {
 setup_environment() {
     log "Setting up environment variables..."
     
+    # Create backup of bashrc if it doesn't exist
+    if [ ! -f ~/.bashrc.backup ] && [ -f ~/.bashrc ]; then
+        cp ~/.bashrc ~/.bashrc.backup
+        info "Created backup of .bashrc"
+    fi
+    
     # Add to bashrc if not already present
     if ! grep -q "HADOOP_HOME" ~/.bashrc; then
         cat >> ~/.bashrc << EOF
 
-# Hadoop Environment Variables
+# Hadoop Environment Variables (Added by hadoop-wsl-installer)
 export JAVA_HOME=${JAVA_HOME}
 export HADOOP_HOME=${HADOOP_HOME}
 export HADOOP_CONF_DIR=\$HADOOP_HOME/etc/hadoop
@@ -154,7 +166,15 @@ export HADOOP_COMMON_HOME=\$HADOOP_HOME
 export HADOOP_HDFS_HOME=\$HADOOP_HOME
 export YARN_HOME=\$HADOOP_HOME
 export PATH=\$PATH:\$HADOOP_HOME/bin:\$HADOOP_HOME/sbin
+
+# WSL-specific optimizations
+export HADOOP_OPTS="\$HADOOP_OPTS -Djava.net.preferIPv4Stack=true"
+export HADOOP_OPTS="\$HADOOP_OPTS -Djava.security.krb5.realm=OX.AC.UK"
+export HADOOP_OPTS="\$HADOOP_OPTS -Djava.security.krb5.kdc=kdc0.ox.ac.uk:kdc1.ox.ac.uk"
 EOF
+        info "Added Hadoop environment variables to ~/.bashrc"
+    else
+        info "Hadoop environment variables already present in ~/.bashrc"
     fi
     
     # Source the bashrc for current session
@@ -168,6 +188,7 @@ EOF
     export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
     
     log "Environment variables configured ✓"
+    info "Run 'source ~/.bashrc' or restart terminal to load environment variables"
 }
 
 # Format HDFS
@@ -197,17 +218,23 @@ final_setup() {
     # Start services
     info "Starting Hadoop services..."
     chmod +x scripts/start-services.sh
-    ./scripts/start-services.sh
+    if ! ./scripts/start-services.sh; then
+        warning "Some services may have failed to start. Continuing with tests..."
+    fi
     
     # Wait a bit for services to start
-    sleep 10
+    info "Waiting for services to initialize..."
+    sleep 15
     
     # Run basic tests
     info "Running installation tests..."
     chmod +x scripts/test-installation.sh
-    ./scripts/test-installation.sh
-    
-    log "Installation completed successfully! ✓"
+    if ./scripts/test-installation.sh; then
+        log "Installation completed successfully! ✓"
+    else
+        warning "Some tests failed, but installation is mostly complete"
+        info "Check logs and run './scripts/test-installation.sh' for detailed diagnostics"
+    fi
 }
 
 # Display final information
