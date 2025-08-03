@@ -221,10 +221,26 @@ EOF
 format_hdfs() {
     log "Formatting HDFS NameNode..."
     
-    cd ${HADOOP_HOME}
-    ./bin/hdfs namenode -format -force
+    # Clean any existing data directories to prevent cluster ID conflicts
+    info "Cleaning existing HDFS data directories..."
+    sudo rm -rf ${HADOOP_HOME}/data/tmp/dfs/name/* 2>/dev/null || true
+    sudo rm -rf ${HADOOP_HOME}/data/tmp/dfs/data/* 2>/dev/null || true
+    sudo rm -rf ${HADOOP_HOME}/logs/* 2>/dev/null || true
     
-    log "HDFS NameNode formatted ✓"
+    # Ensure proper ownership of data directories
+    sudo mkdir -p ${HADOOP_HOME}/data/tmp/dfs/name
+    sudo mkdir -p ${HADOOP_HOME}/data/tmp/dfs/data
+    sudo mkdir -p ${HADOOP_HOME}/logs
+    sudo chown -R ${HADOOP_USER}:${HADOOP_USER} ${HADOOP_HOME}/data
+    sudo chown -R ${HADOOP_USER}:${HADOOP_USER} ${HADOOP_HOME}/logs
+    
+    cd ${HADOOP_HOME}
+    if ./bin/hdfs namenode -format -force; then
+        log "HDFS NameNode formatted successfully ✓"
+    else
+        error "HDFS formatting failed!"
+        exit 1
+    fi
 }
 
 # Create systemd service files (optional)
@@ -253,6 +269,13 @@ create_services() {
 # Final setup and testing
 final_setup() {
     log "Performing final setup..."
+    
+    # Check if we should skip service startup
+    if [ "$SKIP_SERVICE_START" = "true" ]; then
+        info "Skipping service startup (SKIP_SERVICE_START=true)"
+        log "Component installation completed ✓"
+        return
+    fi
     
     # Get the directory where this script is located
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -295,6 +318,8 @@ final_setup() {
         if ! "$SCRIPT_DIR/scripts/start-services.sh"; then
             warning "Some services may have failed to start. You can start them manually with:"
             info "Run: cd $SCRIPT_DIR && source ~/.bashrc && ./scripts/start-services.sh"
+        else
+            info "Service startup script completed"
         fi
     else
         warning "start-services.sh not found at $SCRIPT_DIR/scripts/"
@@ -303,6 +328,20 @@ final_setup() {
             ls -la "$SCRIPT_DIR/scripts/" 2>/dev/null | head -10
         else
             error "Scripts directory $SCRIPT_DIR/scripts/ does not exist!"
+        fi
+    fi
+    
+    # Verify services are running
+    info "Verifying Hadoop services..."
+    sleep 5
+    if command -v jps >/dev/null 2>&1; then
+        RUNNING_SERVICES=$(jps | grep -E "(NameNode|DataNode|ResourceManager|NodeManager)" | wc -l)
+        if [ "$RUNNING_SERVICES" -ge 4 ]; then
+            info "All major Hadoop services are running ✓"
+        else
+            warning "Not all services are running. Current services:"
+            jps | grep -E "(NameNode|DataNode|ResourceManager|NodeManager|SecondaryNameNode|JobHistoryServer)" || echo "No Hadoop services found"
+            info "Try running: source ~/.bashrc && ./scripts/start-services.sh"
         fi
     fi
     
