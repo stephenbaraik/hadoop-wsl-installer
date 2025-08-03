@@ -5,6 +5,10 @@
 
 set -euo pipefail
 
+# Auto-load Hadoop environment
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/load-hadoop-env.sh"
+
 HADOOP_HOME="/opt/hadoop"
 
 # Colors

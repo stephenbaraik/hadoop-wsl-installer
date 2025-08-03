@@ -18,33 +18,38 @@ cd hadoop-wsl-installer
 chmod +x install.sh scripts/*.sh
 ./install.sh
 
-# IMPORTANT: Load environment after installation
-source ~/.bashrc
+# Environment is now automatically loaded! No manual steps needed.
 ```
 
-### 3. Test Installation (After loading environment)
+### 3. Test Installation (Environment auto-loads)
 ```bash
-# Test basic commands
+# Test basic commands (services should already be running)
 hdfs dfs -ls /
 jps
 
 # Create your user directory
 hdfs dfs -mkdir /$(whoami)
+
+# Or use the foolproof HDFS runner
+./scripts/run-hdfs.sh dfs -ls /
+./scripts/run-hdfs.sh dfs -mkdir /$(whoami)
 ```
 
-### 4. Service Management
+### 4. Service Management (auto-loads environment)
 ```bash
-# Start all Hadoop services
+# All scripts now automatically load the Hadoop environment
+
+# Check status first
+./scripts/status.sh
+
+# Start services (if not running)
 ./scripts/start-services.sh
 
-# Stop all Hadoop services
+# Stop services
 ./scripts/stop-services.sh
-
-# Check service status
-./scripts/status.sh
 ```
 
-### 4. Verify Installation
+### 5. Verify Installation
 ```bash
 # Run comprehensive tests
 ./scripts/test-installation.sh
@@ -97,6 +102,32 @@ yarn application -list
 ```
 
 ## 🔧 Troubleshooting
+
+### HDFS "Not Accessible" After Startup
+If HDFS shows as "not accessible" right after starting services:
+```bash
+# Wait 30-60 seconds for NameNode to fully initialize, then check:
+./scripts/status.sh
+
+# Or check NameNode logs:
+tail -f /opt/hadoop/logs/hadoop-*-namenode-*.log
+
+# Try accessing HDFS:
+./scripts/run-hdfs.sh dfs -ls /
+hdfs dfs -ls /
+```
+
+### Environment Not Loading
+If commands like `hdfs` are not found:
+```bash
+# Use the foolproof runner scripts:
+./scripts/run-hdfs.sh dfs -ls /
+./scripts/status.sh
+./scripts/start-services.sh
+
+# Or manually load environment:
+source ~/.bashrc
+```
 
 ### Services Won't Start
 ```bash

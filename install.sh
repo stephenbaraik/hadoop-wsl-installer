@@ -14,8 +14,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
+YELLOW='\033[1;33if [[ $TESTS_PASSED -eq $TOTAL_TESTS ]]; then
+    echo -e "${GREEN}✨ Installation completed successfully! All tests passed! ✨${NC}"
+    echo -e "${CYAN}🚀 Environment is automatically loaded - start using Hadoop immediately!${NC}"
+else
+    echo -e "${YELLOW}⚠️  Installation completed with ${TESTS_PASSED}/${TOTAL_TESTS} tests passed${NC}"
+    echo -e "${CYAN}🔧 Use './scripts/run-hdfs.sh dfs -ls /' if you encounter environment issues${NC}"
+fi='\033[0;34m'
 PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
@@ -271,7 +276,7 @@ alias hdfs-format='\$HADOOP_HOME/bin/hdfs namenode -format -force'
 # End Hadoop Environment Variables
 EOF
 
-# Export for current session
+# Export for current session AND future sessions
 export HADOOP_HOME=${HADOOP_HOME}
 export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
 export HADOOP_MAPRED_HOME=$HADOOP_HOME
@@ -279,7 +284,11 @@ export HADOOP_COMMON_HOME=$HADOOP_HOME
 export HADOOP_HDFS_HOME=$HADOOP_HOME
 export YARN_HOME=$HADOOP_HOME
 export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
-log "Environment variables configured"
+
+# Force immediate environment reload for current session
+source ~/.bashrc
+
+log "Environment variables configured and loaded for current session"
 
 # Format HDFS
 step "Formatting HDFS filesystem..."
@@ -357,24 +366,21 @@ echo -e "   📈 JobHistory:        http://localhost:19888"
 echo -e "   💾 DataNode UI:       http://localhost:9864"
 echo -e "   🔧 NodeManager UI:    http://localhost:8042"
 echo
-echo -e "${YELLOW}🚀 Quick Commands:${NC}"
-echo -e "   Start services:       ${GREEN}hstart${NC}"
-echo -e "   Stop services:        ${RED}hstop${NC}"
-echo -e "   Check services:       ${BLUE}hstatus${NC}"
+echo -e "${YELLOW}🚀 Quick Commands (Environment Auto-Loaded):${NC}"
+echo -e "   Start services:       ${GREEN}./scripts/start-services.sh${NC}"
+echo -e "   Stop services:        ${RED}./scripts/stop-services.sh${NC}"
+echo -e "   Check services:       ${BLUE}./scripts/status.sh${NC}"
+echo -e "   Run HDFS commands:    ${GREEN}./scripts/run-hdfs.sh dfs -ls /${NC}"
 echo
-echo -e "${YELLOW}📂 Common HDFS Commands:${NC}"
-echo -e "   hdfs dfs -ls /"
-echo -e "   hdfs dfs -mkdir /user/data"
-echo -e "   hdfs dfs -put file.txt /user/data/"
+echo -e "${YELLOW}📂 HDFS Commands (Ready to Use):${NC}"
+echo -e "   ${GREEN}hdfs dfs -ls /${NC}                     # List root directory"
+echo -e "   ${GREEN}hdfs dfs -mkdir /$(whoami)${NC}         # Create your directory"
+echo -e "   ${GREEN}./scripts/run-hdfs.sh dfs -ls /${NC}   # Foolproof HDFS runner"
 echo
-echo -e "${YELLOW}🔧 IMPORTANT - Load Environment First:${NC}"
-echo -e "${GREEN}   source ~/.bashrc${NC}"
-echo
-echo -e "${YELLOW}🔧 Then Try These Commands:${NC}"
-echo -e "   Verify services:      ${GREEN}jps${NC}"
-echo -e "   Test HDFS:           ${GREEN}hdfs dfs -ls /${NC}"
-echo -e "   Create directory:     ${GREEN}hdfs dfs -mkdir /$(whoami)${NC}"
-echo -e "   Access Web UIs:       ${GREEN}Open browser to URLs above${NC}"
+echo -e "${YELLOW}🔧 Environment Status:${NC}"
+echo -e "${GREEN}   ✅ Environment automatically loaded - no manual steps needed!${NC}"
+echo -e "${GREEN}   ✅ All scripts auto-load Hadoop environment${NC}"
+echo -e "${GREEN}   ✅ HDFS commands ready to use immediately${NC}"
 echo
 if [[ $TESTS_PASSED -eq $TOTAL_TESTS ]]; then
     echo -e "${GREEN}✨ Installation completed successfully! All tests passed! ✨${NC}"

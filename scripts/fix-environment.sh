@@ -3,7 +3,25 @@
 # Hadoop Environment Fix Script
 # Run this if you get "Unknown command: dfs" or similar errors
 
-echo "🔧 Hadoop Environment Fix"
+#!/bin/bash
+
+# Environment troubleshooting and fix script
+# Author: Stephen Baraik
+
+set -euo pipefail
+
+# Auto-load Hadoop environment
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/load-hadoop-env.sh"
+
+# Colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo -e "${BLUE}🔧 Hadoop Environment Troubleshooter${NC}"
 echo "=========================="
 
 # Check if Hadoop is installed
