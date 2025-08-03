@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Hadoop 3.4.1 Installation Script for Windows WSL
 # Author: Your Name
@@ -17,7 +17,24 @@ NC='\033[0m' # No Color
 HADOOP_VERSION="3.4.1"
 HADOOP_HOME="/opt/hadoop"
 HADOOP_USER=$(whoami)
-JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
+
+# Determine Java home based on distribution
+if command -v apk >/dev/null 2>&1; then
+    # Alpine Linux
+    JAVA_HOME="/usr/lib/jvm/java-11-openjdk"
+else
+    # Ubuntu/Debian
+    JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
+fi
+
+# Helper function to handle sudo commands
+run_as_admin() {
+    if command -v sudo >/dev/null 2>&1 && [ "$(id -u)" != "0" ]; then
+        sudo "$@"
+    else
+        "$@"
+    fi
+}
 
 # Logging function
 log() {
@@ -44,7 +61,7 @@ check_wsl() {
     fi
     
     # Check if we're in a Windows mount path and warn user
-    if [[ "$(pwd)" == /mnt/* ]]; then
+    if echo "$(pwd)" | grep -q "^/mnt/"; then
         warning "Running from Windows filesystem. For better performance, consider running from Linux filesystem (e.g., /home/$USER/)"
     fi
     
@@ -54,8 +71,18 @@ check_wsl() {
 # Update system packages
 update_system() {
     log "Updating system packages..."
-    sudo apt update && sudo apt upgrade -y
-    sudo apt install -y wget curl rsync openssh-server openssh-client vim net-tools
+    # Check if we're on Alpine Linux or Ubuntu/Debian
+    if command -v apk >/dev/null 2>&1; then
+        # Alpine Linux
+        run_as_admin apk update && run_as_admin apk upgrade
+        run_as_admin apk add wget curl rsync openssh-server openssh-client vim net-tools openjdk11-jre-headless bash
+    elif command -v apt >/dev/null 2>&1; then
+        # Ubuntu/Debian
+        run_as_admin apt update && run_as_admin apt upgrade -y
+        run_as_admin apt install -y wget curl rsync openssh-server openssh-client vim net-tools openjdk-11-jre-headless
+    else
+        error "Unsupported Linux distribution. This script requires Alpine Linux or Ubuntu/Debian."
+    fi
 }
 
 # Setup Java
@@ -88,12 +115,12 @@ install_hadoop() {
         warning "Hadoop appears to be already installed at ${HADOOP_HOME}"
         read -p "Do you want to reinstall? This will remove the existing installation. (y/N): " -n 1 -r
         echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        if ! echo "$REPLY" | grep -Eq "^[Yy]$"; then
             info "Skipping Hadoop installation"
             return 0
         fi
         info "Proceeding with reinstallation..."
-        sudo rm -rf ${HADOOP_HOME}
+        run_as_admin rm -rf ${HADOOP_HOME}
     fi
     
     # Download Hadoop if not already present
@@ -126,12 +153,12 @@ install_hadoop() {
     
     # Create Hadoop directory and move extracted files
     info "Installing Hadoop to ${HADOOP_HOME}..."
-    sudo mkdir -p ${HADOOP_HOME}
-    sudo cp -r hadoop-${HADOOP_VERSION}/* ${HADOOP_HOME}/
+    run_as_admin mkdir -p ${HADOOP_HOME}
+    run_as_admin cp -r hadoop-${HADOOP_VERSION}/* ${HADOOP_HOME}/
     rm -rf hadoop-${HADOOP_VERSION}
     
     # Set ownership
-    sudo chown -R ${HADOOP_USER}:${HADOOP_USER} ${HADOOP_HOME}
+    run_as_admin chown -R ${HADOOP_USER}:${HADOOP_USER} ${HADOOP_HOME}
     
     log "Hadoop extracted to ${HADOOP_HOME} ✓"
 }
@@ -223,16 +250,16 @@ format_hdfs() {
     
     # Clean any existing data directories to prevent cluster ID conflicts
     info "Cleaning existing HDFS data directories..."
-    sudo rm -rf ${HADOOP_HOME}/data/tmp/dfs/name/* 2>/dev/null || true
-    sudo rm -rf ${HADOOP_HOME}/data/tmp/dfs/data/* 2>/dev/null || true
-    sudo rm -rf ${HADOOP_HOME}/logs/* 2>/dev/null || true
+    run_as_admin rm -rf ${HADOOP_HOME}/data/tmp/dfs/name/* 2>/dev/null || true
+    run_as_admin rm -rf ${HADOOP_HOME}/data/tmp/dfs/data/* 2>/dev/null || true
+    run_as_admin rm -rf ${HADOOP_HOME}/logs/* 2>/dev/null || true
     
     # Ensure proper ownership of data directories
-    sudo mkdir -p ${HADOOP_HOME}/data/tmp/dfs/name
-    sudo mkdir -p ${HADOOP_HOME}/data/tmp/dfs/data
-    sudo mkdir -p ${HADOOP_HOME}/logs
-    sudo chown -R ${HADOOP_USER}:${HADOOP_USER} ${HADOOP_HOME}/data
-    sudo chown -R ${HADOOP_USER}:${HADOOP_USER} ${HADOOP_HOME}/logs
+    run_as_admin mkdir -p ${HADOOP_HOME}/data/tmp/dfs/name
+    run_as_admin mkdir -p ${HADOOP_HOME}/data/tmp/dfs/data
+    run_as_admin mkdir -p ${HADOOP_HOME}/logs
+    run_as_admin chown -R ${HADOOP_USER}:${HADOOP_USER} ${HADOOP_HOME}/data
+    run_as_admin chown -R ${HADOOP_USER}:${HADOOP_USER} ${HADOOP_HOME}/logs
     
     cd ${HADOOP_HOME}
     if ./bin/hdfs namenode -format -force; then
@@ -421,6 +448,6 @@ main() {
 }
 
 # Check if script is run directly
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+if [ "$0" = "${0#*/}" ]; then
     main "$@"
 fi

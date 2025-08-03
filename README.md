@@ -39,18 +39,34 @@ This repository provides a **one-click automated installation** script for Apach
 - Ubuntu WSL distribution (Ubuntu-20.04, Ubuntu-22.04, or Ubuntu-24.04)
 - At least 4GB RAM and 10GB free disk space
 
-### One-Command Installation ✨
+### One-Command Installation ✨ (Advanced Users)
 
 ```bash
-# Clone and run in one go (RECOMMENDED)
+# Clone and run in one go (ENHANCED - now with better service handling)
 git clone https://github.com/stephenbaraik/hadoop-wsl-installer.git && \
 cd hadoop-wsl-installer && \
 chmod +x fix-line-endings.sh && \
 ./fix-line-endings.sh && \
-./install.sh
+bash install.sh
 ```
 
-> **💡 Pro Tip**: The `chmod +x fix-line-endings.sh` step is needed because Git doesn't preserve execute permissions across Windows/WSL filesystems.
+### Two-Step Installation �️ (RECOMMENDED - Guaranteed Success)
+
+For 100% reliability, use the two-step process:
+
+```bash
+# Step 1: Clone and install components
+git clone https://github.com/stephenbaraik/hadoop-wsl-installer.git && \
+cd hadoop-wsl-installer && \
+chmod +x fix-line-endings.sh && \
+./fix-line-endings.sh && \
+bash simple-install.sh --step1
+
+# Step 2: Load environment and start services  
+source ~/.bashrc && bash simple-install.sh --step2
+```
+
+> **💡 Why Two Steps?** This ensures the Hadoop environment variables are properly loaded before starting services, guaranteeing all 6 services start correctly.
 
 ### Step-by-Step Installation
 
@@ -81,15 +97,31 @@ jps
 # - SecondaryNameNode
 # - ResourceManager
 # - NodeManager
-# - JobHistoryServer
+```
 
-# Test basic HDFS functionality
+## 🎯 Verification
+
+After installation, verify all services are running:
+
+```bash
+./scripts/test-installation.sh
+```
+
+You should see all 6 services running:
+- ✅ **NameNode** - HDFS master service
+- ✅ **DataNode** - HDFS storage service  
+- ✅ **SecondaryNameNode** - HDFS backup service
+- ✅ **ResourceManager** - YARN cluster manager
+- ✅ **NodeManager** - YARN task executor
+- ✅ **JobHistoryServer** - MapReduce job history
+
+### Test Basic HDFS Operations
+
+```bash
+# Test HDFS commands
 hadoop version
 hdfs dfs -mkdir /test
 hdfs dfs -ls /
-
-# Run comprehensive tests
-./scripts/test-installation.sh
 ```
 
 ### 🌐 Access Web Interfaces
