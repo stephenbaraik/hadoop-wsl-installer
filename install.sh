@@ -18,13 +18,37 @@ HADOOP_VERSION="3.4.1"
 HADOOP_HOME="/opt/hadoop"
 HADOOP_USER=$(whoami)
 
-# Determine Java home based on distribution
+# Determine Java home based on distribution and actual installation
+detect_java_home() {
+    # Try common Java paths
+    local java_paths=(
+        "/usr/lib/jvm/java-11-openjdk-amd64"
+        "/usr/lib/jvm/java-11-openjdk"
+        "/usr/lib/jvm/default-java"
+        "/usr/lib/jvm/java-1.11.0-openjdk-amd64"
+    )
+    
+    for path in "${java_paths[@]}"; do
+        if [ -d "$path" ]; then
+            echo "$path"
+            return 0
+        fi
+    done
+    
+    # If no predefined path works, try to find Java
+    if command -v java >/dev/null 2>&1; then
+        java -XshowSettings:properties -version 2>&1 | grep 'java.home' | awk '{print $3}' | head -1
+    else
+        echo "/usr/lib/jvm/java-11-openjdk-amd64"  # Default fallback
+    fi
+}
+
 if command -v apk >/dev/null 2>&1; then
     # Alpine Linux
     JAVA_HOME="/usr/lib/jvm/java-11-openjdk"
 else
-    # Ubuntu/Debian
-    JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
+    # Ubuntu/Debian - detect dynamically
+    JAVA_HOME=$(detect_java_home)
 fi
 
 # Helper function to handle sudo commands
@@ -174,6 +198,9 @@ configure_hadoop() {
     cp config/yarn-site.xml ${HADOOP_HOME}/etc/hadoop/
     cp config/hadoop-env.sh ${HADOOP_HOME}/etc/hadoop/
     
+    # Fix line endings in all Hadoop configuration files
+    fix_hadoop_line_endings
+    
     # Fix deprecated JVM options in existing Hadoop installation for Java 11+ compatibility
     info "Fixing deprecated JVM options for Java 11+ compatibility..."
     if [ -f "${HADOOP_HOME}/etc/hadoop/hadoop-env.sh" ]; then
@@ -242,6 +269,17 @@ EOF
     
     log "Environment variables configured ✓"
     info "Run 'source ~/.bashrc' or restart terminal to load environment variables"
+}
+
+# Fix line endings in Hadoop configuration files
+fix_hadoop_line_endings() {
+    if [ -d "${HADOOP_HOME}" ]; then
+        log "Fixing line endings in Hadoop configuration files..."
+        find "${HADOOP_HOME}" -name "*.sh" -type f -exec sed -i 's/\r$//' {} \; 2>/dev/null || true
+        find "${HADOOP_HOME}" -name "*.xml" -type f -exec sed -i 's/\r$//' {} \; 2>/dev/null || true
+        find "${HADOOP_HOME}" -name "*.properties" -type f -exec sed -i 's/\r$//' {} \; 2>/dev/null || true
+        log "Hadoop configuration line endings fixed ✓"
+    fi
 }
 
 # Format HDFS
