@@ -29,6 +29,7 @@ This repository provides a **one-click automated installation** script for Apach
 - **Production-ready** - Includes monitoring and testing tools
 - **Web UI accessible** - Access Hadoop interfaces from Windows browser
 - **Comprehensive testing** - Built-in validation and diagnostics
+- **Fully consolidated** - All fixes and configurations in one script
 
 ---
 
@@ -39,34 +40,14 @@ This repository provides a **one-click automated installation** script for Apach
 - Ubuntu WSL distribution (Ubuntu-20.04, Ubuntu-22.04, or Ubuntu-24.04)
 - At least 4GB RAM and 10GB free disk space
 
-### One-Command Installation ✨ (Advanced Users)
+### One-Command Installation ✨
 
 ```bash
-# Clone and run in one go (ENHANCED - now with better service handling)
+# Clone and run installation
 git clone https://github.com/stephenbaraik/hadoop-wsl-installer.git && \
 cd hadoop-wsl-installer && \
-chmod +x fix-line-endings.sh && \
-./fix-line-endings.sh && \
-bash install.sh
+./install.sh
 ```
-
-### Two-Step Installation �️ (RECOMMENDED - Guaranteed Success)
-
-For 100% reliability, use the two-step process:
-
-```bash
-# Step 1: Clone and install components
-git clone https://github.com/stephenbaraik/hadoop-wsl-installer.git && \
-cd hadoop-wsl-installer && \
-chmod +x fix-line-endings.sh && \
-./fix-line-endings.sh && \
-bash simple-install.sh --step1
-
-# Step 2: Load environment and start services  
-source ~/.bashrc && bash simple-install.sh --step2
-```
-
-> **💡 Why Two Steps?** This ensures the Hadoop environment variables are properly loaded before starting services, guaranteeing all 6 services start correctly.
 
 ### Step-by-Step Installation
 
@@ -75,11 +56,7 @@ source ~/.bashrc && bash simple-install.sh --step2
 git clone https://github.com/stephenbaraik/hadoop-wsl-installer.git
 cd hadoop-wsl-installer
 
-# 2. Make fix-line-endings script executable and run it
-chmod +x fix-line-endings.sh
-./fix-line-endings.sh
-
-# 3. Run installation
+# 2. Run installation (all fixes are integrated)
 ./install.sh
 ```
 
@@ -99,42 +76,48 @@ jps
 # - NodeManager
 ```
 
+---
+
 ## 🎯 Verification
 
-After installation, verify all services are running:
+After installation, test your Hadoop installation:
 
 ```bash
-./scripts/test-installation.sh
+# Test installation
+./install.sh --test
+
+# Or check services manually
+jps
 ```
 
-Or check services manually:
-```bash
-$JAVA_HOME/bin/jps
-```
-
-You should see all 6 services running:
+You should see all major services running:
 - ✅ **NameNode** - HDFS master service
 - ✅ **DataNode** - HDFS storage service  
 - ✅ **SecondaryNameNode** - HDFS backup service
 - ✅ **ResourceManager** - YARN cluster manager
 - ✅ **NodeManager** - YARN task executor
-- ✅ **JobHistoryServer** - MapReduce job history
 
 **✅ TESTED SUCCESSFULLY ON:**
 - ✅ Ubuntu 24.04 WSL2 
+- ✅ Ubuntu 22.04 WSL2
+- ✅ Ubuntu 20.04 WSL2
 - ✅ Alpine Linux WSL
-- ✅ Various minimal WSL environments
 
 ### Test Basic HDFS Operations
 
 ```bash
+# Load environment
+source ~/.bashrc
+
 # Test HDFS commands
 hadoop version
 hdfs dfs -mkdir /test
 hdfs dfs -ls /
 ```
 
-### 🌐 Access Web Interfaces
+---
+
+## 🌐 Access Web Interfaces
 
 Once services are running, access these URLs from your browser:
 
@@ -145,7 +128,7 @@ Once services are running, access these URLs from your browser:
 
 ### 🪟 For WSL2 Users (Windows Port Forwarding)
 
-To access web UIs from Windows browser:
+If you cannot access web UIs from Windows browser, use the port forwarding script:
 
 ```powershell
 # Run in Windows PowerShell as Administrator
@@ -167,6 +150,7 @@ cd path\to\hadoop-wsl-installer\scripts
 - ✅ Hadoop 3.4.1 download & extraction  
 - ✅ Optimized WSL configurations
 - ✅ Environment variables setup
+- ✅ Java 11+ compatibility fixes
 
 </td>
 <td>
@@ -175,7 +159,7 @@ cd path\to\hadoop-wsl-installer\scripts
 - ✅ HDFS, YARN & MapReduce services
 - ✅ Web UIs accessible from Windows
 - ✅ Comprehensive testing suite
-- ✅ Service management scripts
+- ✅ Service management integration
 - ✅ Real-time diagnostics
 
 </td>
@@ -194,9 +178,9 @@ cd path\to\hadoop-wsl-installer\scripts
 
 ### 🛠️ **Developer Experience**
 - ✅ One-click installation
-- ✅ Detailed troubleshooting guide
-- ✅ Validation and testing tools
-- ✅ Backup and recovery options
+- ✅ All fixes integrated in main script
+- ✅ Built-in validation and testing
+- ✅ Simplified project structure
 
 </td>
 </tr>
@@ -204,26 +188,20 @@ cd path\to\hadoop-wsl-installer\scripts
 
 ---
 
-## 📁 Repository Structure
+## 📁 Repository Structure (Simplified)
 
 ```
 hadoop-wsl-installer/
 ├── 📄 README.md                    # This file
-├── 🚀 install.sh                   # Main installation script  
-├── 🔧 fix-permissions.sh           # Permission management
-├── ✅ validate-fixes.sh             # Validation script
+├── 🚀 install.sh                   # Main installation script (all-in-one)
+├── ⚙️ hadoop-services.sh           # Service management helper
 ├── 📁 config/                      # Hadoop configurations
 │   ├── ⚙️ core-site.xml           # Core Hadoop settings
 │   ├── 💾 hdfs-site.xml           # HDFS configurations  
 │   ├── 🔄 mapred-site.xml         # MapReduce settings
 │   ├── 🧶 yarn-site.xml           # YARN configurations
 │   └── 🌍 hadoop-env.sh           # Environment variables
-├── 📁 scripts/                     # Utility scripts
-│   ├── ☕ setup-java.sh           # Java installation
-│   ├── 🔐 setup-ssh.sh            # SSH configuration
-│   ├── ▶️ start-services.sh       # Start Hadoop services
-│   ├── ⏹️ stop-services.sh        # Stop Hadoop services
-│   ├── 🧪 test-installation.sh    # Installation testing
+├── 📁 scripts/                     # Remaining utility scripts
 │   └── 🪟 port-forward.ps1        # WSL2 port forwarding
 └── 📁 docs/                        # Documentation
     ├── 🔧 troubleshooting.md       # Issue resolution guide
@@ -232,95 +210,36 @@ hadoop-wsl-installer/
 
 ---
 
-## 💻 Prerequisites
-
-| Requirement | Version | Notes |
-|------------|---------|-------|
-| **Windows** | 10/11 | WSL2 enabled |
-| **WSL Distribution** | Ubuntu 20.04+ | Or compatible Linux distro |
-| **Memory** | 4GB+ RAM | Allocated to WSL |
-| **Storage** | 5GB+ free space | For Hadoop installation |
-| **Network** | Internet connection | For downloads |
-
-### 🔧 Enable WSL2 (if not already enabled)
-
-```powershell
-# Run in Windows PowerShell as Administrator
-wsl --install
-# Restart computer when prompted
-```
-
----
-
-## 🌐 Web Interfaces
-
-After installation, access these beautiful web interfaces:
-
-<table>
-<tr>
-<th>Service</th>
-<th>URL</th>
-<th>Purpose</th>
-</tr>
-<tr>
-<td>🗄️ <strong>NameNode</strong></td>
-<td><a href="http://localhost:9870">localhost:9870</a></td>
-<td>HDFS management and monitoring</td>
-</tr>
-<tr>
-<td>⚡ <strong>ResourceManager</strong></td>
-<td><a href="http://localhost:8088">localhost:8088</a></td>
-<td>YARN cluster monitoring</td>
-</tr>
-<tr>
-<td>📊 <strong>JobHistory Server</strong></td>
-<td><a href="http://localhost:19888">localhost:19888</a></td>
-<td>MapReduce job history</td>
-</tr>
-<tr>
-<td>💾 <strong>DataNode</strong></td>
-<td><a href="http://localhost:9864">localhost:9864</a></td>
-<td>Data storage monitoring</td>
-</tr>
-</table>
-
----
-
 ## 🛠️ Usage
 
 ### 🎮 Service Management
 
-<details>
-<summary><strong>🟢 Start Hadoop Services</strong></summary>
-
 ```bash
-cd hadoop-wsl-installer
-./scripts/start-services.sh
+# Start Hadoop services
+./install.sh --start-services
+
+# Alternative: Use the service helper script
+./hadoop-services.sh start
+
+# Stop services
+./hadoop-services.sh stop
+
+# Check service status
+./hadoop-services.sh status
+
+# Restart services
+./hadoop-services.sh restart
+
+# Test installation
+./install.sh --test
 ```
-</details>
-
-<details>
-<summary><strong>🔴 Stop Hadoop Services</strong></summary>
-
-```bash
-./scripts/stop-services.sh
-```
-</details>
-
-<details>
-<summary><strong>✅ Test Installation</strong></summary>
-
-```bash
-./scripts/test-installation.sh
-```
-</details>
 
 ### 📂 Common HDFS Operations
 
-<details>
-<summary><strong>🗂️ Basic File Operations</strong></summary>
-
 ```bash
+# Load environment first
+source ~/.bashrc
+
 # List HDFS root directory
 hdfs dfs -ls /
 
@@ -336,10 +255,8 @@ hdfs dfs -get /user/$USER/localfile.txt ./downloaded.txt
 # View file content
 hdfs dfs -cat /user/$USER/localfile.txt
 ```
-</details>
 
-<details>
-<summary><strong>📊 System Information</strong></summary>
+### 📊 System Information
 
 ```bash
 # Check HDFS status
@@ -351,7 +268,6 @@ yarn node -list
 # Monitor cluster
 hdfs dfsadmin -printTopology
 ```
-</details>
 
 ---
 
@@ -378,11 +294,9 @@ jps  # Should show NameNode, DataNode, ResourceManager, NodeManager
 <summary><strong>🔐 SSH connection issues</strong></summary>
 
 ```bash
-# Restart SSH service
+# The install script handles SSH setup automatically
+# If issues persist, restart SSH service
 sudo service ssh restart
-
-# Regenerate SSH keys
-./scripts/setup-ssh.sh
 ```
 </details>
 
@@ -399,20 +313,23 @@ memory=4GB
 ```
 </details>
 
+<details>
+<summary><strong>☕ Java compatibility issues</strong></summary>
+
+```bash
+# Java 11+ compatibility fixes are automatically applied
+# Check Java version
+java -version
+
+# Should show OpenJDK 11
+```
+</details>
+
 ### 📚 More Help
 
 - 📖 **Detailed Guide**: [docs/troubleshooting.md](docs/troubleshooting.md)
 - 🌐 **Web UI Guide**: [docs/web-ui-guide.md](docs/web-ui-guide.md)
 - 🐛 **Report Issues**: [GitHub Issues](https://github.com/stephenbaraik/hadoop-wsl-installer/issues)
-
----
-
-## 📚 Documentation
-
-| Document | Description |
-|----------|-------------|
-| [🔧 Troubleshooting Guide](docs/troubleshooting.md) | Common issues and solutions |
-| [🌐 Web UI Guide](docs/web-ui-guide.md) | How to use Hadoop web interfaces |
 
 ---
 

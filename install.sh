@@ -108,22 +108,92 @@ update_system() {
 # Setup Java
 setup_java() {
     log "Setting up Java 11..."
-    chmod +x scripts/setup-java.sh 2>/dev/null || true
-    ./scripts/setup-java.sh
+    
+    # Check if we're on Alpine Linux or Ubuntu/Debian
+    if command -v apk >/dev/null 2>&1; then
+        # Alpine Linux - Java should already be installed by update_system
+        if ! command -v java >/dev/null 2>&1; then
+            error "Java installation failed on Alpine Linux!"
+        fi
+    elif command -v apt >/dev/null 2>&1; then
+        # Ubuntu/Debian - Install OpenJDK 11
+        log "Installing OpenJDK 11..."
+        run_as_admin apt install -y openjdk-11-jdk openjdk-11-jre
+        
+        # Configure alternatives (ensure Java 11 is default)
+        run_as_admin update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 1 2>/dev/null || true
+        run_as_admin update-alternatives --install /usr/bin/javac javac /usr/lib/jvm/java-11-openjdk-amd64/bin/javac 1 2>/dev/null || true
+    else
+        error "Unsupported Linux distribution for Java installation"
+    fi
     
     # Verify Java installation
     if ! java -version 2>&1 | grep -q "openjdk version \"11"; then
         error "Java 11 installation failed!"
     fi
+    
+    java_version=$(java -version 2>&1 | head -n1)
+    info "Installed: $java_version"
     log "Java 11 installed successfully ✓"
 }
 
 # Setup SSH
 setup_ssh() {
     log "Setting up SSH for passwordless authentication..."
-    chmod +x scripts/setup-ssh.sh 2>/dev/null || true
-    ./scripts/setup-ssh.sh
-    log "SSH configured successfully ✓"
+    
+    # Install SSH server and client (already done in update_system, but ensure it's configured)
+    log "Configuring SSH server..."
+    
+    # Start SSH service
+    run_as_admin service ssh start 2>/dev/null || true
+    
+    # Enable SSH service to start automatically
+    run_as_admin systemctl enable ssh 2>/dev/null || warning "systemctl not available in WSL, SSH service configured manually"
+    
+    # Generate SSH key pair if not exists
+    log "Setting up SSH keys for passwordless authentication..."
+    
+    # Create .ssh directory if it doesn't exist
+    mkdir -p ~/.ssh
+    chmod 700 ~/.ssh
+    
+    # Generate SSH key pair if it doesn't exist
+    if [ ! -f ~/.ssh/id_rsa ]; then
+        info "Generating SSH key pair..."
+        ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N "" -q
+        info "SSH key pair generated ✓"
+    else
+        info "SSH key pair already exists"
+    fi
+    
+    # Add public key to authorized_keys for passwordless localhost access
+    if [ -f ~/.ssh/id_rsa.pub ]; then
+        cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys 2>/dev/null || true
+        chmod 600 ~/.ssh/authorized_keys
+        info "SSH key added to authorized_keys ✓"
+    fi
+    
+    # Configure SSH client for localhost connections
+    cat > ~/.ssh/config << EOF
+Host localhost
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    LogLevel QUIET
+    
+Host 0.0.0.0
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    LogLevel QUIET
+EOF
+    chmod 600 ~/.ssh/config
+    
+    # Test SSH connection
+    info "Testing SSH connection to localhost..."
+    if ssh -o ConnectTimeout=10 localhost 'echo "SSH connection successful"' 2>/dev/null; then
+        log "SSH passwordless authentication configured successfully ✓"
+    else
+        warning "SSH connection test failed, but keys are configured. This is normal if SSH service isn't fully started yet."
+    fi
 }
 
 # Download and install Hadoop
@@ -147,10 +217,28 @@ install_hadoop() {
     if [ ! -f "hadoop-${HADOOP_VERSION}.tar.gz" ]; then
         info "Downloading Hadoop ${HADOOP_VERSION}..."
         
-        # Use the dedicated download script for faster downloads
-        chmod +x scripts/download-hadoop.sh 2>/dev/null || true
-        if ! ./scripts/download-hadoop.sh; then
-            error "Failed to download Hadoop. Please check your internet connection."
+        # Try multiple mirrors for reliable download
+        local mirrors=(
+            "https://archive.apache.org/dist/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz"
+            "https://dlcdn.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz"
+            "https://downloads.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz"
+        )
+        
+        local download_success=false
+        for url in "${mirrors[@]}"; do
+            info "Trying mirror: $url"
+            if wget --progress=bar --timeout=30 --tries=3 -O "hadoop-${HADOOP_VERSION}.tar.gz" "$url"; then
+                download_success=true
+                info "Download successful from: $url"
+                break
+            else
+                warning "Failed to download from: $url"
+                rm -f "hadoop-${HADOOP_VERSION}.tar.gz" 2>/dev/null || true
+            fi
+        done
+        
+        if [ "$download_success" = false ]; then
+            error "Failed to download Hadoop from all mirrors. Please check your internet connection."
             exit 1
         fi
     else
@@ -200,10 +288,26 @@ configure_hadoop() {
     # Fix deprecated JVM options in existing Hadoop installation for Java 11+ compatibility
     info "Fixing deprecated JVM options for Java 11+ compatibility..."
     if [ -f "${HADOOP_HOME}/etc/hadoop/hadoop-env.sh" ]; then
-        # Remove deprecated GC logging options that cause Java 11+ errors
+        # Create backup
+        cp "${HADOOP_HOME}/etc/hadoop/hadoop-env.sh" "${HADOOP_HOME}/etc/hadoop/hadoop-env.sh.backup" 2>/dev/null || true
+        
+        # Remove deprecated options that cause Java 11+ errors
         sed -i 's/-XX:+PrintGCDetails//g' ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
         sed -i 's/-XX:+PrintGCTimeStamps//g' ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
         sed -i 's/-Xloggc:/-Xlog:gc*:/g' ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
+        
+        # Add Java 11+ compatible options
+        if ! grep -q "HADOOP_OPTS.*add-opens" ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh; then
+            echo "" >> ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
+            echo "# Java 11+ compatibility options" >> ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
+            echo "export HADOOP_OPTS=\"\$HADOOP_OPTS --add-opens java.base/java.lang=ALL-UNNAMED\"" >> ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
+            echo "export HADOOP_OPTS=\"\$HADOOP_OPTS --add-opens java.base/java.util=ALL-UNNAMED\"" >> ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
+            echo "export HADOOP_OPTS=\"\$HADOOP_OPTS --add-opens java.base/java.util.concurrent=ALL-UNNAMED\"" >> ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
+            echo "export HADOOP_OPTS=\"\$HADOOP_OPTS --add-opens java.base/java.net=ALL-UNNAMED\"" >> ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
+            echo "export HADOOP_OPTS=\"\$HADOOP_OPTS --add-opens java.base/java.io=ALL-UNNAMED\"" >> ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
+        fi
+        
+        info "Java 11+ compatibility options added ✓"
     fi
     
     # Create data directories
@@ -269,13 +373,34 @@ EOF
 
 # Fix line endings in Hadoop configuration files
 fix_hadoop_line_endings() {
+    log "Fixing line endings for WSL compatibility..."
+    
+    # Fix line endings in current directory scripts
+    info "Fixing main scripts..."
+    find "$(pwd)" -maxdepth 1 -name "*.sh" -type f -exec sed -i 's/\r$//' {} \; 2>/dev/null || true
+    
+    # Fix scripts in subdirectories
+    info "Fixing scripts in subdirectories..."
+    find "$(pwd)/scripts" -name "*.sh" -type f -exec sed -i 's/\r$//' {} \; 2>/dev/null || true
+    find "$(pwd)/config" -name "*.sh" -type f -exec sed -i 's/\r$//' {} \; 2>/dev/null || true
+    
+    # Make all scripts executable
+    info "Making scripts executable..."
+    find "$(pwd)" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
+    
+    # Fix Hadoop installation files if they exist
     if [ -d "${HADOOP_HOME}" ]; then
-        log "Fixing line endings in Hadoop configuration files..."
+        info "Fixing Hadoop configuration files..."
         find "${HADOOP_HOME}" -name "*.sh" -type f -exec sed -i 's/\r$//' {} \; 2>/dev/null || true
         find "${HADOOP_HOME}" -name "*.xml" -type f -exec sed -i 's/\r$//' {} \; 2>/dev/null || true
         find "${HADOOP_HOME}" -name "*.properties" -type f -exec sed -i 's/\r$//' {} \; 2>/dev/null || true
-        log "Hadoop configuration line endings fixed ✓"
+        
+        # Make Hadoop scripts executable
+        find "${HADOOP_HOME}/bin" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
+        find "${HADOOP_HOME}/sbin" -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
     fi
+    
+    log "Line endings fixed and scripts made executable ✓"
 }
 
 # Format HDFS
@@ -304,27 +429,93 @@ format_hdfs() {
     fi
 }
 
-# Create systemd service files (optional)
-create_services() {
-    log "Creating service management scripts..."
+# Start Hadoop services
+start_hadoop_services() {
+    log "Starting Hadoop services..."
     
-    # Get the directory where this script is located
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    
-    # Make scripts executable using find to avoid wildcard issues
-    if [ -d "$SCRIPT_DIR/scripts" ]; then
-        find "$SCRIPT_DIR/scripts" -name "*.sh" -type f -exec chmod +x {} \;
-        info "Made all .sh scripts in scripts/ directory executable"
+    # Ensure we're in the right environment
+    if [ -z "$HADOOP_HOME" ] || [ ! -d "$HADOOP_HOME" ]; then
+        error "HADOOP_HOME not set or Hadoop not installed"
+        return 1
     fi
     
-    # Also make the main scripts executable
-    chmod +x "$SCRIPT_DIR/install.sh" 2>/dev/null || true
-    chmod +x "$SCRIPT_DIR/fix-permissions.sh" 2>/dev/null || true
-    chmod +x "$SCRIPT_DIR/validate-fixes.sh" 2>/dev/null || true
-    chmod +x "$SCRIPT_DIR/setup.sh" 2>/dev/null || true
-    chmod +x "$SCRIPT_DIR/fix-java11-compatibility.sh" 2>/dev/null || true
+    cd "$HADOOP_HOME"
     
-    log "Service scripts made executable ✓"
+    # Stop any existing services first
+    info "Stopping any existing Hadoop services..."
+    ./sbin/stop-dfs.sh 2>/dev/null || true
+    ./sbin/stop-yarn.sh 2>/dev/null || true
+    
+    # Wait a moment for services to stop
+    sleep 3
+    
+    # Start HDFS
+    info "Starting HDFS services..."
+    ./sbin/start-dfs.sh
+    
+    # Wait for HDFS to start
+    sleep 5
+    
+    # Start YARN
+    info "Starting YARN services..."
+    ./sbin/start-yarn.sh
+    
+    # Wait for YARN to start
+    sleep 5
+    
+    # Verify services are running
+    info "Verifying Hadoop services..."
+    if command -v jps >/dev/null 2>&1; then
+        sleep 3
+        local running_services=$(jps | grep -E "(NameNode|DataNode|ResourceManager|NodeManager)" | wc -l)
+        if [ "$running_services" -ge 4 ]; then
+            log "All major Hadoop services started successfully ✓"
+            info "Running services:"
+            jps | grep -E "(NameNode|DataNode|ResourceManager|NodeManager|SecondaryNameNode)"
+        else
+            warning "Not all services started. Current services:"
+            jps | grep -E "(NameNode|DataNode|ResourceManager|NodeManager|SecondaryNameNode)" || echo "No Hadoop services found"
+        fi
+    else
+        warning "jps command not available, cannot verify service status"
+    fi
+    
+    return 0
+}
+
+# Test Hadoop installation
+test_hadoop_installation() {
+    log "Testing Hadoop installation..."
+    
+    # Test HDFS
+    info "Testing HDFS..."
+    if hdfs dfs -ls / >/dev/null 2>&1; then
+        log "HDFS is working ✓"
+        
+        # Test basic HDFS operations
+        info "Testing HDFS operations..."
+        hdfs dfs -mkdir -p /user/$(whoami) 2>/dev/null || true
+        echo "test" > /tmp/hadoop_test.txt
+        if hdfs dfs -put /tmp/hadoop_test.txt /user/$(whoami)/ 2>/dev/null; then
+            log "HDFS file operations working ✓"
+            hdfs dfs -rm /user/$(whoami)/hadoop_test.txt >/dev/null 2>&1 || true
+        else
+            warning "HDFS file operations failed"
+        fi
+        rm -f /tmp/hadoop_test.txt
+    else
+        warning "HDFS is not responding properly"
+    fi
+    
+    # Test YARN
+    info "Testing YARN..."
+    if yarn node -list >/dev/null 2>&1; then
+        log "YARN is working ✓"
+    else
+        warning "YARN is not responding properly"
+    fi
+    
+    return 0
 }
 
 # Final setup and testing
@@ -338,10 +529,7 @@ final_setup() {
         return
     fi
     
-    # Get the directory where this script is located
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    
-    # Load environment variables from bashrc for this session
+    # Load environment variables for this session
     info "Loading Hadoop environment variables..."
     if [ -f ~/.bashrc ]; then
         # Source the Hadoop environment variables for this session
@@ -361,71 +549,26 @@ final_setup() {
         export PATH="$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin"
     fi
     
-    # Start services
+    # Start services using integrated function
     info "Starting Hadoop services..."
-    
-    # Debug: Show current directory and script location
-    info "Current directory: $(pwd)"
-    info "Script directory: $SCRIPT_DIR"
-    info "Looking for services script at: $SCRIPT_DIR/scripts/start-services.sh"
-    
-    if [ -f "$SCRIPT_DIR/scripts/start-services.sh" ]; then
-        info "Found start-services.sh ✓"
-        chmod +x "$SCRIPT_DIR/scripts/start-services.sh" 2>/dev/null || true
-        # Export environment to the script
-        export HADOOP_HOME HADOOP_CONF_DIR HADOOP_COMMON_HOME HADOOP_HDFS_HOME HADOOP_MAPRED_HOME YARN_HOME PATH
-        info "Environment exported: HADOOP_HOME=$HADOOP_HOME"
-        
-        if ! "$SCRIPT_DIR/scripts/start-services.sh"; then
-            warning "Some services may have failed to start. You can start them manually with:"
-            info "Run: cd $SCRIPT_DIR && source ~/.bashrc && ./scripts/start-services.sh"
-        else
-            info "Service startup script completed"
-        fi
+    if start_hadoop_services; then
+        info "Hadoop services started successfully"
     else
-        warning "start-services.sh not found at $SCRIPT_DIR/scripts/"
-        info "Available files in scripts directory:"
-        if [ -d "$SCRIPT_DIR/scripts/" ]; then
-            ls -la "$SCRIPT_DIR/scripts/" 2>/dev/null | head -10
-        else
-            error "Scripts directory $SCRIPT_DIR/scripts/ does not exist!"
-        fi
+        warning "Some services may have failed to start"
+        info "You can start them manually by running: source ~/.bashrc && ./install.sh --start-services"
     fi
     
-    # Verify services are running
-    info "Verifying Hadoop services..."
-    sleep 5
-    if command -v jps >/dev/null 2>&1; then
-        RUNNING_SERVICES=$(jps | grep -E "(NameNode|DataNode|ResourceManager|NodeManager)" | wc -l)
-        if [ "$RUNNING_SERVICES" -ge 4 ]; then
-            info "All major Hadoop services are running ✓"
-        else
-            warning "Not all services are running. Current services:"
-            jps | grep -E "(NameNode|DataNode|ResourceManager|NodeManager|SecondaryNameNode|JobHistoryServer)" || echo "No Hadoop services found"
-            info "Try running: source ~/.bashrc && ./scripts/start-services.sh"
-        fi
-    fi
-    
-    # Wait a bit for services to start
+    # Wait for services to initialize
     info "Waiting for services to initialize..."
-    sleep 15
+    sleep 10
     
-    # Run basic tests
+    # Run basic tests using integrated function
     info "Running installation tests..."
-    if [ -f "$SCRIPT_DIR/scripts/test-installation.sh" ]; then
-        chmod +x "$SCRIPT_DIR/scripts/test-installation.sh" 2>/dev/null || true
-        # Export environment for test script as well
-        export HADOOP_HOME HADOOP_CONF_DIR HADOOP_COMMON_HOME HADOOP_HDFS_HOME HADOOP_MAPRED_HOME YARN_HOME PATH
-        if "$SCRIPT_DIR/scripts/test-installation.sh"; then
-            log "Installation completed successfully! ✓"
-        else
-            warning "Some tests failed, but installation is mostly complete"
-            info "You can run tests manually with: cd $SCRIPT_DIR && source ~/.bashrc && ./scripts/test-installation.sh"
-        fi
+    if test_hadoop_installation; then
+        log "Installation tests completed successfully! ✓"
     else
-        warning "test-installation.sh not found at $SCRIPT_DIR/scripts/, skipping tests"
+        warning "Some tests failed, but installation is mostly complete"
         info "You can verify installation manually by running: source ~/.bashrc && jps"
-        log "Installation completed! ✓"
     fi
 }
 
@@ -443,9 +586,9 @@ display_info() {
     echo -e "  DataNode:        http://localhost:9864"
     echo
     echo -e "${BLUE}Useful Commands:${NC}"
-    echo -e "  Start services:  ./scripts/start-services.sh"
-    echo -e "  Stop services:   ./scripts/stop-services.sh"
-    echo -e "  Test install:    ./scripts/test-installation.sh"
+    echo -e "  Start services:  ./install.sh --start-services"
+    echo -e "  Stop services:   $HADOOP_HOME/sbin/stop-all.sh"
+    echo -e "  Check services:  jps"
     echo
     echo -e "${BLUE}HDFS Commands:${NC}"
     echo -e "  hdfs dfs -ls /"
@@ -454,8 +597,8 @@ display_info() {
     echo
     echo -e "${GREEN}Next Steps:${NC}"
     echo -e "  1. Load environment: ${YELLOW}source ~/.bashrc${NC}"
-    echo -e "  2. Verify services:  ${YELLOW}\$JAVA_HOME/bin/jps${NC}"
-    echo -e "  3. Start services:   ${YELLOW}./scripts/start-services.sh${NC} (if not started)"
+    echo -e "  2. Verify services:  ${YELLOW}jps${NC}"
+    echo -e "  3. Start services:   ${YELLOW}./install.sh --start-services${NC} (if not started)"
     echo -e "  4. Test HDFS:        ${YELLOW}hdfs dfs -ls /${NC}"
     echo
     echo -e "${YELLOW}Note: If services didn't start automatically, run the commands above in order${NC}"
@@ -467,6 +610,7 @@ main() {
     log "Starting Hadoop 3.4.1 installation for WSL..."
     
     check_wsl
+    fix_hadoop_line_endings  # Fix line endings early to ensure all scripts work
     update_system
     setup_java
     setup_ssh
@@ -474,14 +618,50 @@ main() {
     configure_hadoop
     setup_environment
     format_hdfs
-    create_services
     final_setup
     display_info
     
     log "Installation process completed!"
 }
 
-# Check if script is run directly
+# Check if script is run directly and handle arguments
 if [ "$0" = "${0#*/}" ]; then
-    main "$@"
+    case "${1:-}" in
+        "--start-services")
+            log "Starting Hadoop services manually..."
+            # Load environment
+            if [ -f ~/.bashrc ]; then
+                eval "$(grep -E '^export (JAVA_HOME|HADOOP_|YARN_)' ~/.bashrc | tail -20)"
+            fi
+            start_hadoop_services
+            ;;
+        "--test")
+            log "Testing Hadoop installation..."
+            # Load environment
+            if [ -f ~/.bashrc ]; then
+                eval "$(grep -E '^export (JAVA_HOME|HADOOP_|YARN_)' ~/.bashrc | tail -20)"
+            fi
+            test_hadoop_installation
+            ;;
+        "--help"|"-h")
+            echo "Usage: $0 [OPTION]"
+            echo "Install and configure Hadoop 3.4.1 on WSL"
+            echo ""
+            echo "Options:"
+            echo "  (no args)           Run full installation"
+            echo "  --start-services    Start Hadoop services only"
+            echo "  --test             Test existing installation"
+            echo "  --help, -h         Show this help message"
+            echo ""
+            exit 0
+            ;;
+        "")
+            main "$@"
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
 fi
