@@ -21,6 +21,8 @@
 
 This repository provides a **one-click automated installation** script for Apache Hadoop 3.4.1 on Windows WSL (Windows Subsystem for Linux). The installer handles all the complex setup including Java installation, SSH configuration, Hadoop services, and web UI accessibility from Windows.
 
+**🔄 Smart Download**: Hadoop 3.4.1 (203MB) is automatically downloaded during installation - keeping this repository lightweight!
+
 ### ✨ What makes this special?
 - **Zero manual configuration** - Everything is automated
 - **WSL2 optimized** - Handles networking complexities
