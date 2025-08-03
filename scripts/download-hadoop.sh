@@ -75,13 +75,6 @@ download_hadoop() {
         return 1
     fi
 }
-            return 1
-        fi
-    else
-        error "Neither curl nor wget found!"
-        return 1
-    fi
-}
 
 # Verify download
 verify_download() {
