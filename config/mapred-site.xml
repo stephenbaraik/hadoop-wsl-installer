@@ -1,0 +1,161 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!-- MapReduce Configuration for WSL -->
+<configuration>
+    <!-- MapReduce framework -->
+    <property>
+        <n>mapreduce.framework.name</n>
+        <value>yarn</value>
+        <description>The runtime framework for executing MapReduce jobs</description>
+    </property>
+    
+    <!-- JobHistory Server settings -->
+    <property>
+        <n>mapreduce.jobhistory.address</n>
+        <value>localhost:10020</value>
+        <description>MapReduce JobHistory Server IPC host:port</description>
+    </property>
+    
+    <property>
+        <n>mapreduce.jobhistory.webapp.address</n>
+        <value>0.0.0.0:19888</value>
+        <description>MapReduce JobHistory Server Web UI host:port</description>
+    </property>
+    
+    <!-- Job execution settings -->
+    <property>
+        <n>mapreduce.map.memory.mb</n>
+        <value>512</value>
+        <description>The amount of memory to request from the scheduler for each map task</description>
+    </property>
+    
+    <property>
+        <n>mapreduce.reduce.memory.mb</n>
+        <value>512</value>
+        <description>The amount of memory to request from the scheduler for each reduce task</description>
+    </property>
+    
+    <!-- Application Master settings -->
+    <property>
+        <n>mapreduce.application.classpath</n>
+        <value>$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/*:$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/lib/*</value>
+        <description>CLASSPATH for MapReduce applications</description>
+    </property>
+    
+    <!-- Java heap settings -->
+    <property>
+        <n>mapreduce.map.java.opts</n>
+        <value>-Xmx256m</value>
+        <description>Java opts for the map processes</description>
+    </property>
+    
+    <property>
+        <n>mapreduce.reduce.java.opts</n>
+        <value>-Xmx256m</value>
+        <description>Java opts for the reduce processes</description>
+    </property>
+    
+    <!-- Task settings -->
+    <property>
+        <n>mapreduce.task.timeout</n>
+        <value>600000</value>
+        <description>The number of milliseconds before a task will be terminated if it neither reads nor writes</description>
+    </property>
+    
+    <!-- Output settings -->
+    <property>
+        <n>mapreduce.output.fileoutputformat.compress</n>
+        <value>false</value>
+        <description>Should the job outputs be compressed?</description>
+    </property>
+    
+    <!-- Intermediate output settings -->
+    <property>
+        <n>mapreduce.map.output.compress</n>
+        <value>true</value>
+        <description>Should the outputs of the maps be compressed before being sent across the network</description>
+    </property>
+    
+    <property>
+        <n>mapreduce.map.output.compress.codec</n>
+        <value>org.apache.hadoop.io.compress.DefaultCodec</value>
+        <description>Compression codec for map outputs</description>
+    </property>
+    
+    <!-- Shuffle settings -->
+    <property>
+        <n>mapreduce.reduce.shuffle.parallelcopies</n>
+        <value>5</value>
+        <description>The default number of parallel transfers run by reduce during the copy(shuffle) phase</description>
+    </property>
+    
+    <!-- Job submission settings -->
+    <property>
+        <n>mapreduce.client.submit.file.replication</n>
+        <value>1</value>
+        <description>The replication level for submitted job files</description>
+    </property>
+    
+    <!-- AM settings -->
+    <property>
+        <n>yarn.app.mapreduce.am.resource.mb</n>
+        <value>512</value>
+        <description>The amount of memory the ApplicationMaster needs</description>
+    </property>
+    
+    <property>
+        <n>yarn.app.mapreduce.am.command-opts</n>
+        <value>-Xmx256m</value>
+        <description>Java opts for the ApplicationMaster</description>
+    </property>
+    
+    <!-- History server intermediate done directory -->
+    <property>
+        <n>mapreduce.jobhistory.intermediate-done-dir</n>
+        <value>/user/history/done_intermediate</value>
+        <description>Directory where history files are written by MapReduce jobs</description>
+    </property>
+    
+    <!-- History server done directory -->
+    <property>
+        <n>mapreduce.jobhistory.done-dir</n>
+        <value>/user/history/done</value>
+        <description>Directory where history files are managed by the JobHistory Server</description>
+    </property>
+    
+    <!-- Enable uber mode for small jobs -->
+    <property>
+        <n>mapreduce.job.ubertask.enable</n>
+        <value>true</value>
+        <description>Whether to enable the small-jobs "ubertask" optimization</description>
+    </property>
+    
+    <property>
+        <n>mapreduce.job.ubertask.maxmaps</n>
+        <value>9</value>
+        <description>Threshold for number of maps beyond which job is not considered small</description>
+    </property>
+    
+    <property>
+        <n>mapreduce.job.ubertask.maxreduces</n>
+        <value>1</value>
+        <description>Threshold for number of reduces beyond which job is not considered small</description>
+    </property>
+</configuration>
