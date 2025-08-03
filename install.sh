@@ -226,10 +226,20 @@ format_hdfs() {
 create_services() {
     log "Creating service management scripts..."
     
-    # Make scripts executable
-    chmod +x scripts/*.sh
+    # Make scripts executable using find to avoid wildcard issues
+    if [ -d scripts ]; then
+        find scripts -name "*.sh" -type f -exec chmod +x {} \;
+        info "Made all .sh scripts in scripts/ directory executable"
+    fi
     
-    log "Service scripts created ✓"
+    # Also make the main scripts executable
+    chmod +x install.sh 2>/dev/null || true
+    chmod +x fix-permissions.sh 2>/dev/null || true
+    chmod +x validate-fixes.sh 2>/dev/null || true
+    chmod +x setup.sh 2>/dev/null || true
+    chmod +x fix-java11-compatibility.sh 2>/dev/null || true
+    
+    log "Service scripts made executable ✓"
 }
 
 # Final setup and testing
