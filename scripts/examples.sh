@@ -8,8 +8,7 @@ set -euo pipefail
 # Auto-load Hadoop environment
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/load-hadoop-env.sh"
-
-HADOOP_HOME="/opt/hadoop"
+load_hadoop_env || exit 1
 
 # Colors
 GREEN='\033[0;32m'

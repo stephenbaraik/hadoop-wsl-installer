@@ -51,7 +51,7 @@ log "System checks passed"
 step "Updating system packages..."
 export DEBIAN_FRONTEND=noninteractive
 sudo apt update -qq
-sudo apt install -y -qq openjdk-11-jdk openssh-server wget curl tar net-tools rsync unzip
+sudo apt install -y -qq openjdk-11-jdk openssh-server wget curl tar net-tools rsync unzip aria2
 
 # Setup Java
 step "Setting up Java 11..."
@@ -91,11 +91,65 @@ if [[ -f "$HADOOP_ARCHIVE" ]] && tar -tzf "$HADOOP_ARCHIVE" >/dev/null 2>&1; the
     info "Hadoop archive already exists and is valid"
 else
     rm -f "$HADOOP_ARCHIVE"
-    info "Downloading from Apache archive (this may take a few minutes)..."
-    wget --progress=bar:force --timeout=30 --tries=3 \
-         "https://archive.apache.org/dist/hadoop/common/hadoop-${HADOOP_VERSION}/${HADOOP_ARCHIVE}"
-    if ! tar -tzf "$HADOOP_ARCHIVE" >/dev/null 2>&1; then
-        error "Downloaded file appears corrupted"
+    info "Downloading Hadoop ${HADOOP_VERSION} (~680MB) from fastest available mirror..."
+    
+    # Define multiple fast mirrors ordered by speed/reliability
+    MIRRORS=(
+        "https://dlcdn.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/${HADOOP_ARCHIVE}"
+        "https://downloads.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/${HADOOP_ARCHIVE}"
+        "https://mirrors.ocf.berkeley.edu/apache/hadoop/common/hadoop-${HADOOP_VERSION}/${HADOOP_ARCHIVE}"
+        "https://apache.mirrors.tds.net/hadoop/common/hadoop-${HADOOP_VERSION}/${HADOOP_ARCHIVE}"
+        "https://mirrors.sonic.net/apache/hadoop/common/hadoop-${HADOOP_VERSION}/${HADOOP_ARCHIVE}"
+        "https://ftp.wayne.edu/apache/hadoop/common/hadoop-${HADOOP_VERSION}/${HADOOP_ARCHIVE}"
+        "https://mirror.cogentco.com/pub/apache/hadoop/common/hadoop-${HADOOP_VERSION}/${HADOOP_ARCHIVE}"
+        "https://mirrors.gigenet.com/apache/hadoop/common/hadoop-${HADOOP_VERSION}/${HADOOP_ARCHIVE}"
+        "https://archive.apache.org/dist/hadoop/common/hadoop-${HADOOP_VERSION}/${HADOOP_ARCHIVE}"
+    )
+    
+    # Try each mirror until one works
+    DOWNLOAD_SUCCESS=false
+    for mirror in "${MIRRORS[@]}"; do
+        info "Trying: $(echo $mirror | cut -d'/' -f3)"
+        
+        # Try aria2c first (faster with parallel connections)
+        if command -v aria2c >/dev/null 2>&1; then
+            if aria2c --max-connection-per-server=4 --split=4 --min-split-size=1M \
+                     --connect-timeout=15 --timeout=30 --retry-wait=3 --max-tries=2 \
+                     --summary-interval=0 --download-result=hide \
+                     --console-log-level=warn "$mirror" 2>/dev/null; then
+                if tar -tzf "$HADOOP_ARCHIVE" >/dev/null 2>&1; then
+                    info "✅ Successfully downloaded from $(echo $mirror | cut -d'/' -f3) using aria2c"
+                    DOWNLOAD_SUCCESS=true
+                    break
+                else
+                    warn "Downloaded file corrupted, trying next mirror..."
+                    rm -f "$HADOOP_ARCHIVE"
+                fi
+            fi
+        fi
+        
+        # Fallback to wget if aria2c fails
+        if [[ "$DOWNLOAD_SUCCESS" != "true" ]]; then
+            if wget --progress=bar:force --timeout=30 --tries=2 --connect-timeout=10 "$mirror" 2>/dev/null; then
+                if tar -tzf "$HADOOP_ARCHIVE" >/dev/null 2>&1; then
+                    info "✅ Successfully downloaded from $(echo $mirror | cut -d'/' -f3) using wget"
+                    DOWNLOAD_SUCCESS=true
+                    break
+                else
+                    warn "Downloaded file corrupted, trying next mirror..."
+                    rm -f "$HADOOP_ARCHIVE"
+                fi
+            fi
+        fi
+            fi
+        
+        if [[ "$DOWNLOAD_SUCCESS" != "true" ]]; then
+            warn "Failed to download from $(echo $mirror | cut -d'/' -f3), trying next..."
+        fi
+    done
+    
+    if [[ "$DOWNLOAD_SUCCESS" != "true" ]]; then
+        error "Failed to download Hadoop from any mirror. Please check your internet connection."
     fi
 fi
 log "Hadoop downloaded successfully"
@@ -261,7 +315,9 @@ export HADOOP_MAPRED_HOME=\$HADOOP_HOME
 export HADOOP_COMMON_HOME=\$HADOOP_HOME
 export HADOOP_HDFS_HOME=\$HADOOP_HOME
 export YARN_HOME=\$HADOOP_HOME
-export PATH=\$PATH:\$HADOOP_HOME/bin:\$HADOOP_HOME/sbin
+export HADOOP_COMMON_LIB_NATIVE_DIR=\$HADOOP_HOME/lib/native
+export HADOOP_OPTS="-Djava.library.path=\$HADOOP_HOME/lib/native"
+export PATH=\$HADOOP_HOME/bin:\$HADOOP_HOME/sbin:\$PATH
 
 # Hadoop aliases for convenience
 alias hstart='\$HADOOP_HOME/sbin/start-all.sh'
@@ -278,7 +334,7 @@ export HADOOP_MAPRED_HOME=$HADOOP_HOME
 export HADOOP_COMMON_HOME=$HADOOP_HOME
 export HADOOP_HDFS_HOME=$HADOOP_HOME
 export YARN_HOME=$HADOOP_HOME
-export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+export PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH
 
 # Force immediate environment reload for current session
 source ~/.bashrc
@@ -376,6 +432,7 @@ echo -e "${YELLOW}🔧 Environment Status:${NC}"
 echo -e "${GREEN}   ✅ Environment automatically loaded - no manual steps needed!${NC}"
 echo -e "${GREEN}   ✅ All scripts auto-load Hadoop environment${NC}"
 echo -e "${GREEN}   ✅ HDFS commands ready to use immediately${NC}"
+echo -e "${GREEN}   ✅ Fast download using multiple mirrors + aria2c${NC}"
 echo
 if [[ $TESTS_PASSED -eq $TOTAL_TESTS ]]; then
     echo -e "${GREEN}✨ Installation completed successfully! All tests passed! ✨${NC}"

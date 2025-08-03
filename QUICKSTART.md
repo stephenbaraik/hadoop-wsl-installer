@@ -21,8 +21,11 @@ chmod +x install.sh scripts/*.sh
 # Environment is now automatically loaded! No manual steps needed.
 ```
 
-### 3. Test Installation (Environment auto-loads)
+### 3. Test Installation ✅ **Environment Auto-Loads!**
 ```bash
+# Test environment first (recommended)
+./scripts/test-environment.sh
+
 # Test basic commands (services should already be running)
 hdfs dfs -ls /
 jps
@@ -30,12 +33,12 @@ jps
 # Create your user directory
 hdfs dfs -mkdir /$(whoami)
 
-# Or use the foolproof HDFS runner
+# Or use the bulletproof HDFS runner
 ./scripts/run-hdfs.sh dfs -ls /
 ./scripts/run-hdfs.sh dfs -mkdir /$(whoami)
 ```
 
-### 4. Service Management (auto-loads environment)
+### 4. Service Management ⚡ **Auto-loads environment**
 ```bash
 # All scripts now automatically load the Hadoop environment
 

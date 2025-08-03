@@ -10,6 +10,18 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/load-hadoop-env.sh"
 
+# Force load environment - exit if fails
+if ! load_hadoop_env; then
+    echo -e "${RED}❌ Failed to load Hadoop environment!${NC}" >&2
+    exit 1
+fi
+
+# Verify HDFS is available
+if [[ ! -x "${HADOOP_HOME}/bin/hdfs" ]]; then
+    echo -e "${RED}❌ HDFS binary not found at ${HADOOP_HOME}/bin/hdfs${NC}" >&2
+    exit 1
+fi
+
 # Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -33,6 +45,6 @@ if [[ $# -eq 0 ]]; then
     exit 0
 fi
 
-# Run the HDFS command
+# Run the HDFS command using full path to ensure correct binary
 echo -e "${GREEN}🔧 Running: hdfs $*${NC}"
-hdfs "$@"
+"${HADOOP_HOME}/bin/hdfs" "$@"
