@@ -13,8 +13,8 @@ NC='\033[0m' # No Color
 
 # Function to load Hadoop environment
 load_hadoop_env() {
-    # Check if already loaded
-    if [[ -n "$HADOOP_HOME" ]] && [[ -d "$HADOOP_HOME" ]] && command -v hdfs >/dev/null 2>&1; then
+    # Check if already loaded (safely check variables)
+    if [[ -n "${HADOOP_HOME:-}" ]] && [[ -d "${HADOOP_HOME:-}" ]] && command -v hdfs >/dev/null 2>&1; then
         return 0  # Already loaded
     fi
     
@@ -26,7 +26,7 @@ load_hadoop_env() {
     fi
     
     # If still not loaded, set manually
-    if [[ -z "$HADOOP_HOME" ]] || [[ ! -d "$HADOOP_HOME" ]]; then
+    if [[ -z "${HADOOP_HOME:-}" ]] || [[ ! -d "${HADOOP_HOME:-}" ]]; then
         export HADOOP_HOME="/opt/hadoop"
         export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
         export HADOOP_CONF_DIR="$HADOOP_HOME/etc/hadoop"
@@ -38,7 +38,7 @@ load_hadoop_env() {
     fi
     
     # Verify environment is loaded
-    if [[ -n "$HADOOP_HOME" ]] && [[ -d "$HADOOP_HOME" ]] && command -v hdfs >/dev/null 2>&1; then
+    if [[ -n "${HADOOP_HOME:-}" ]] && [[ -d "${HADOOP_HOME:-}" ]] && command -v hdfs >/dev/null 2>&1; then
         echo -e "${GREEN}✅ Hadoop environment loaded successfully${NC}"
         return 0
     else
