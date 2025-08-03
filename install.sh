@@ -195,6 +195,27 @@ EOF
 }
 
 # ============================================================================
+# Download Helper Functions
+# ============================================================================
+download_with_progress() {
+    local url="$1"
+    local output="$2"
+    local mirror_name="$(echo $url | cut -d'/' -f3)"
+    
+    # Try wget first (better for this use case)
+    if command -v wget >/dev/null 2>&1; then
+        echo -e "${CYAN}📥 Downloading from ${mirror_name} using wget...${NC}"
+        wget --progress=bar:force:noscroll --show-progress --timeout=30 --tries=3 -O "$output" "$url" 2>&1
+    # Fallback to curl with progress bar
+    elif command -v curl >/dev/null 2>&1; then
+        echo -e "${CYAN}📥 Downloading from ${mirror_name} using curl...${NC}"
+        curl -L --retry 3 --max-time 30 --progress-bar -o "$output" "$url" 2>&1
+    else
+        error "Neither wget nor curl is available for downloading"
+    fi
+}
+
+# ============================================================================
 # Hadoop Download
 # ============================================================================
 download_hadoop() {
@@ -220,16 +241,25 @@ download_hadoop() {
     
     local downloaded=false
     for mirror in "${mirrors[@]}"; do
-        info "Attempting download from: $(echo $mirror | cut -d'/' -f3)"
-        if wget --progress=bar:force --timeout=30 --tries=3 -O "$hadoop_archive" "$mirror" 2>/dev/null; then
+        local mirror_name="$(echo $mirror | cut -d'/' -f3)"
+        info "Attempting download from: ${mirror_name}"
+        echo -e "${CYAN}📥 Downloading Hadoop ${HADOOP_VERSION} (~500MB)...${NC}"
+        
+        # Use enhanced download function with progress display
+        if download_with_progress "$mirror" "$hadoop_archive"; then
             # Verify download integrity
+            echo -e "\n${BLUE}🔍 Verifying download integrity...${NC}"
             if tar -tzf "$hadoop_archive" >/dev/null 2>&1; then
+                echo -e "${GREEN}✅ Download completed and verified successfully${NC}"
                 downloaded=true
                 break
             else
                 warn "Downloaded file appears corrupted, trying next mirror..."
                 rm -f "$hadoop_archive"
             fi
+        else
+            warn "Download failed from ${mirror_name}, trying next mirror..."
+            rm -f "$hadoop_archive" 2>/dev/null || true
         fi
     done
     
