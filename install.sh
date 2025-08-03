@@ -257,15 +257,53 @@ final_setup() {
     # Get the directory where this script is located
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     
+    # Load environment variables from bashrc for this session
+    info "Loading Hadoop environment variables..."
+    if [ -f ~/.bashrc ]; then
+        # Source the Hadoop environment variables for this session
+        eval "$(grep -E '^export (JAVA_HOME|HADOOP_|YARN_)' ~/.bashrc | tail -20)"
+        info "Environment variables loaded for installation session"
+    fi
+    
+    # Verify environment is set
+    if [ -z "$HADOOP_HOME" ]; then
+        warning "HADOOP_HOME not set, setting manually for installation"
+        export HADOOP_HOME="/opt/hadoop"
+        export HADOOP_CONF_DIR="$HADOOP_HOME/etc/hadoop"
+        export HADOOP_COMMON_HOME="$HADOOP_HOME"
+        export HADOOP_HDFS_HOME="$HADOOP_HOME"
+        export HADOOP_MAPRED_HOME="$HADOOP_HOME"
+        export YARN_HOME="$HADOOP_HOME"
+        export PATH="$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin"
+    fi
+    
     # Start services
     info "Starting Hadoop services..."
+    
+    # Debug: Show current directory and script location
+    info "Current directory: $(pwd)"
+    info "Script directory: $SCRIPT_DIR"
+    info "Looking for services script at: $SCRIPT_DIR/scripts/start-services.sh"
+    
     if [ -f "$SCRIPT_DIR/scripts/start-services.sh" ]; then
+        info "Found start-services.sh ✓"
         chmod +x "$SCRIPT_DIR/scripts/start-services.sh" 2>/dev/null || true
+        # Export environment to the script
+        export HADOOP_HOME HADOOP_CONF_DIR HADOOP_COMMON_HOME HADOOP_HDFS_HOME HADOOP_MAPRED_HOME YARN_HOME PATH
+        info "Environment exported: HADOOP_HOME=$HADOOP_HOME"
+        
         if ! "$SCRIPT_DIR/scripts/start-services.sh"; then
-            warning "Some services may have failed to start. Continuing with tests..."
+            warning "Some services may have failed to start. You can start them manually with:"
+            info "Run: cd $SCRIPT_DIR && source ~/.bashrc && ./scripts/start-services.sh"
         fi
     else
-        warning "start-services.sh not found, skipping service startup"
+        warning "start-services.sh not found at $SCRIPT_DIR/scripts/"
+        info "Available files in scripts directory:"
+        if [ -d "$SCRIPT_DIR/scripts/" ]; then
+            ls -la "$SCRIPT_DIR/scripts/" 2>/dev/null | head -10
+        else
+            error "Scripts directory $SCRIPT_DIR/scripts/ does not exist!"
+        fi
     fi
     
     # Wait a bit for services to start
@@ -276,14 +314,17 @@ final_setup() {
     info "Running installation tests..."
     if [ -f "$SCRIPT_DIR/scripts/test-installation.sh" ]; then
         chmod +x "$SCRIPT_DIR/scripts/test-installation.sh" 2>/dev/null || true
+        # Export environment for test script as well
+        export HADOOP_HOME HADOOP_CONF_DIR HADOOP_COMMON_HOME HADOOP_HDFS_HOME HADOOP_MAPRED_HOME YARN_HOME PATH
         if "$SCRIPT_DIR/scripts/test-installation.sh"; then
             log "Installation completed successfully! ✓"
         else
             warning "Some tests failed, but installation is mostly complete"
-            info "Check logs and run './scripts/test-installation.sh' for detailed diagnostics"
+            info "You can run tests manually with: cd $SCRIPT_DIR && source ~/.bashrc && ./scripts/test-installation.sh"
         fi
     else
-        warning "test-installation.sh not found, skipping tests"
+        warning "test-installation.sh not found at $SCRIPT_DIR/scripts/, skipping tests"
+        info "You can verify installation manually by running: source ~/.bashrc && jps"
         log "Installation completed! ✓"
     fi
 }
@@ -311,7 +352,13 @@ display_info() {
     echo -e "  hdfs dfs -mkdir /user"
     echo -e "  hdfs dfs -put localfile /user/"
     echo
-    echo -e "${YELLOW}Note: Restart your terminal or run 'source ~/.bashrc' to load environment variables${NC}"
+    echo -e "${GREEN}Next Steps:${NC}"
+    echo -e "  1. Load environment: ${YELLOW}source ~/.bashrc${NC}"
+    echo -e "  2. Verify services:  ${YELLOW}\$JAVA_HOME/bin/jps${NC}"
+    echo -e "  3. Start services:   ${YELLOW}./scripts/start-services.sh${NC} (if not started)"
+    echo -e "  4. Test HDFS:        ${YELLOW}hdfs dfs -ls /${NC}"
+    echo
+    echo -e "${YELLOW}Note: If services didn't start automatically, run the commands above in order${NC}"
     echo
 }
 
