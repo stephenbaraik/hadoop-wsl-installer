@@ -61,7 +61,7 @@ update_system() {
 # Setup Java
 setup_java() {
     log "Setting up Java 11..."
-    chmod +x scripts/setup-java.sh
+    chmod +x scripts/setup-java.sh 2>/dev/null || true
     ./scripts/setup-java.sh
     
     # Verify Java installation
@@ -74,7 +74,7 @@ setup_java() {
 # Setup SSH
 setup_ssh() {
     log "Setting up SSH for passwordless authentication..."
-    chmod +x scripts/setup-ssh.sh
+    chmod +x scripts/setup-ssh.sh 2>/dev/null || true
     ./scripts/setup-ssh.sh
     log "SSH configured successfully ✓"
 }
@@ -101,7 +101,7 @@ install_hadoop() {
         info "Downloading Hadoop ${HADOOP_VERSION}..."
         
         # Use the dedicated download script for faster downloads
-        chmod +x scripts/download-hadoop.sh
+        chmod +x scripts/download-hadoop.sh 2>/dev/null || true
         if ! ./scripts/download-hadoop.sh; then
             error "Failed to download Hadoop. Please check your internet connection."
             exit 1
@@ -248,9 +248,13 @@ final_setup() {
     
     # Start services
     info "Starting Hadoop services..."
-    chmod +x scripts/start-services.sh
-    if ! ./scripts/start-services.sh; then
-        warning "Some services may have failed to start. Continuing with tests..."
+    if [ -f scripts/start-services.sh ]; then
+        chmod +x scripts/start-services.sh 2>/dev/null || true
+        if ! ./scripts/start-services.sh; then
+            warning "Some services may have failed to start. Continuing with tests..."
+        fi
+    else
+        warning "start-services.sh not found, skipping service startup"
     fi
     
     # Wait a bit for services to start
@@ -259,12 +263,17 @@ final_setup() {
     
     # Run basic tests
     info "Running installation tests..."
-    chmod +x scripts/test-installation.sh
-    if ./scripts/test-installation.sh; then
-        log "Installation completed successfully! ✓"
+    if [ -f scripts/test-installation.sh ]; then
+        chmod +x scripts/test-installation.sh 2>/dev/null || true
+        if ./scripts/test-installation.sh; then
+            log "Installation completed successfully! ✓"
+        else
+            warning "Some tests failed, but installation is mostly complete"
+            info "Check logs and run './scripts/test-installation.sh' for detailed diagnostics"
+        fi
     else
-        warning "Some tests failed, but installation is mostly complete"
-        info "Check logs and run './scripts/test-installation.sh' for detailed diagnostics"
+        warning "test-installation.sh not found, skipping tests"
+        log "Installation completed! ✓"
     fi
 }
 
