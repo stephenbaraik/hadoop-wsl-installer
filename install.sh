@@ -20,26 +20,22 @@ HADOOP_USER=$(whoami)
 
 # Determine Java home based on distribution and actual installation
 detect_java_home() {
-    # Try common Java paths
-    local java_paths=(
-        "/usr/lib/jvm/java-11-openjdk-amd64"
-        "/usr/lib/jvm/java-11-openjdk"
-        "/usr/lib/jvm/default-java"
-        "/usr/lib/jvm/java-1.11.0-openjdk-amd64"
-    )
-    
-    for path in "${java_paths[@]}"; do
-        if [ -d "$path" ]; then
-            echo "$path"
-            return 0
-        fi
-    done
-    
-    # If no predefined path works, try to find Java
-    if command -v java >/dev/null 2>&1; then
-        java -XshowSettings:properties -version 2>&1 | grep 'java.home' | awk '{print $3}' | head -1
+    # Try common Java paths one by one
+    if [ -d "/usr/lib/jvm/java-11-openjdk-amd64" ]; then
+        echo "/usr/lib/jvm/java-11-openjdk-amd64"
+    elif [ -d "/usr/lib/jvm/java-11-openjdk" ]; then
+        echo "/usr/lib/jvm/java-11-openjdk"
+    elif [ -d "/usr/lib/jvm/default-java" ]; then
+        echo "/usr/lib/jvm/default-java"
+    elif [ -d "/usr/lib/jvm/java-1.11.0-openjdk-amd64" ]; then
+        echo "/usr/lib/jvm/java-1.11.0-openjdk-amd64"
     else
-        echo "/usr/lib/jvm/java-11-openjdk-amd64"  # Default fallback
+        # If no predefined path works, try to find Java
+        if command -v java >/dev/null 2>&1; then
+            java -XshowSettings:properties -version 2>&1 | grep 'java.home' | awk '{print $3}' | head -1
+        else
+            echo "/usr/lib/jvm/java-11-openjdk-amd64"  # Default fallback
+        fi
     fi
 }
 
