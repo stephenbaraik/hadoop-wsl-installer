@@ -14,13 +14,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33if [[ $TESTS_PASSED -eq $TOTAL_TESTS ]]; then
-    echo -e "${GREEN}✨ Installation completed successfully! All tests passed! ✨${NC}"
-    echo -e "${CYAN}🚀 Environment is automatically loaded - start using Hadoop immediately!${NC}"
-else
-    echo -e "${YELLOW}⚠️  Installation completed with ${TESTS_PASSED}/${TOTAL_TESTS} tests passed${NC}"
-    echo -e "${CYAN}🔧 Use './scripts/run-hdfs.sh dfs -ls /' if you encounter environment issues${NC}"
-fi='\033[0;34m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
@@ -384,9 +379,9 @@ echo -e "${GREEN}   ✅ HDFS commands ready to use immediately${NC}"
 echo
 if [[ $TESTS_PASSED -eq $TOTAL_TESTS ]]; then
     echo -e "${GREEN}✨ Installation completed successfully! All tests passed! ✨${NC}"
-    echo -e "${CYAN}💡 Remember to run: ${YELLOW}source ~/.bashrc${CYAN} to use Hadoop commands${NC}"
+    echo -e "${CYAN}� Environment is automatically loaded - start using Hadoop immediately!${NC}"
 else
-    echo -e "${YELLOW}⚠️  Installation completed but some tests failed ($TESTS_PASSED/$TOTAL_TESTS passed)${NC}"
-    echo -e "${CYAN}💡 Remember to run: ${YELLOW}source ~/.bashrc${CYAN} to use Hadoop commands${NC}"
+    echo -e "${YELLOW}⚠️  Installation completed with ${TESTS_PASSED}/${TOTAL_TESTS} tests passed${NC}"
+    echo -e "${CYAN}� Use './scripts/run-hdfs.sh dfs -ls /' if you encounter environment issues${NC}"
 fi
 echo
