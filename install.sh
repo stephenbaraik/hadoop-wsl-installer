@@ -141,7 +141,6 @@ else
                 fi
             fi
         fi
-            fi
         
         if [[ "$DOWNLOAD_SUCCESS" != "true" ]]; then
             warn "Failed to download from $(echo $mirror | cut -d'/' -f3), trying next..."
