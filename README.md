@@ -34,31 +34,70 @@ This repository provides a **one-click automated installation** script for Apach
 
 ## 🚀 Quick Start
 
-### Method 1: One-Command Installation
+### Prerequisites
+- Windows 10/11 with WSL2 enabled
+- Ubuntu WSL distribution (Ubuntu-20.04, Ubuntu-22.04, or Ubuntu-24.04)
+- At least 4GB RAM and 10GB free disk space
+
+### One-Command Installation ✨
 
 ```bash
-# Clone and run in one go
+# Clone and run in one go (RECOMMENDED)
 git clone https://github.com/stephenbaraik/hadoop-wsl-installer.git && \
 cd hadoop-wsl-installer && \
-chmod +x fix-permissions.sh && \
-./fix-permissions.sh && \
+./fix-line-endings.sh && \
 ./install.sh
 ```
 
-### Method 2: Step-by-Step Installation
+> **💡 Pro Tip**: The `fix-line-endings.sh` script ensures all scripts work correctly in WSL by converting Windows line endings to Unix format.
+
+### Step-by-Step Installation
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/stephenbaraik/hadoop-wsl-installer.git
 cd hadoop-wsl-installer
 
-# 2. Fix permissions (important for WSL)
-chmod +x fix-permissions.sh
-./fix-permissions.sh
+# 2. Fix line endings and permissions
+./fix-line-endings.sh
 
 # 3. Run installation
 ./install.sh
 ```
+
+### ✅ Verify Installation Success
+
+After installation completes, verify all services are running:
+
+```bash
+# Check all Hadoop services are running
+jps
+
+# You should see:
+# - NameNode
+# - DataNode  
+# - SecondaryNameNode
+# - ResourceManager
+# - NodeManager
+# - JobHistoryServer
+
+# Test basic HDFS functionality
+hadoop version
+hdfs dfs -mkdir /test
+hdfs dfs -ls /
+
+# Run comprehensive tests
+./scripts/test-installation.sh
+```
+
+### 🌐 Access Web Interfaces
+
+Once services are running, access these URLs from your browser:
+
+- **NameNode UI**: http://localhost:9870
+- **ResourceManager UI**: http://localhost:8088  
+- **DataNode UI**: http://localhost:9864
+- **JobHistory UI**: http://localhost:19888
 
 ### 🪟 For WSL2 Users (Windows Port Forwarding)
 
