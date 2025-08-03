@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Hadoop Download Script with Multiple Mirrors
-# Finds the fastest mirror and downloads Hadoop
+# Hadoop Download Script - Simplified Version
+# Downloads Hadoop from reliable mirrors
 
 set -e
 
@@ -32,65 +32,17 @@ error() {
     echo -e "${RED}[ERROR] $1${NC}"
 }
 
-# Test mirror speed
-test_mirror_speed() {
-    local url="$1"
-    local hostname=$(echo "$url" | cut -d'/' -f3)
-    
-    info "Testing speed for $hostname..."
-    
-    # Test with a small file first (1MB timeout)
-    local speed=$(curl -r 0-1048576 -s -w "%{speed_download}" -o /dev/null --max-time 10 "$url" 2>/dev/null || echo "0")
-    
-    if [ "$speed" = "0" ] || [ -z "$speed" ]; then
-        echo "0"
-    else
-        # Convert to KB/s
-        echo "$speed" | awk '{printf "%.0f", $1/1024}'
-    fi
-}
-
-# Find fastest mirror
-find_fastest_mirror() {
-    log "Finding fastest mirror for Hadoop download..."
-    
-    # List of mirrors with geographical diversity
+# Get reliable download URL
+get_download_url() {
+    # Primary reliable mirrors in order of preference
     local mirrors=(
         "https://archive.apache.org/dist/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz"
         "https://dlcdn.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz"
         "https://downloads.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz"
-        "https://mirror.ox.ac.uk/sites/rsync.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz"
-        "https://mirrors.estointernet.in/apache/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz"
-        "https://ftp.wayne.edu/apache/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz"
-        "https://apache.claz.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz"
-        "https://apache.mirrors.nublue.co.uk/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz"
-        "https://mirror.serverion.com/apache/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz"
-        "https://ftp.jaist.ac.jp/pub/apache/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz"
     )
     
-    local fastest_url=""
-    local fastest_speed=0
-    
-    for mirror in "${mirrors[@]}"; do
-        local hostname=$(echo "$mirror" | cut -d'/' -f3)
-        local speed=$(test_mirror_speed "$mirror")
-        
-        if [ "$speed" -gt "$fastest_speed" ]; then
-            fastest_speed=$speed
-            fastest_url=$mirror
-        fi
-        
-        info "$hostname: ${speed} KB/s"
-    done
-    
-    if [ -n "$fastest_url" ] && [ "$fastest_speed" -gt 0 ]; then
-        local hostname=$(echo "$fastest_url" | cut -d'/' -f3)
-        log "Fastest mirror: $hostname (${fastest_speed} KB/s)"
-        echo "$fastest_url"
-    else
-        warning "Could not determine fastest mirror, using default"
-        echo "${mirrors[0]}"
-    fi
+    # Return the first mirror (most reliable)
+    echo "${mirrors[0]}"
 }
 
 # Download with progress and resume support
@@ -116,6 +68,13 @@ download_hadoop() {
             return 0
         else
             error "Download failed with wget"
+            return 1
+        fi
+    else
+        error "Neither curl nor wget is available"
+        return 1
+    fi
+}
             return 1
         fi
     else
@@ -158,7 +117,6 @@ verify_download() {
 # Main download function
 main() {
     local force_download=false
-    local use_fastest=true
     local custom_url=""
     
     # Parse arguments
@@ -168,20 +126,14 @@ main() {
                 force_download=true
                 shift
                 ;;
-            --no-speed-test)
-                use_fastest=false
-                shift
-                ;;
             --url)
                 custom_url="$2"
-                use_fastest=false
                 shift 2
                 ;;
             --help|-h)
                 echo "Usage: $0 [OPTIONS]"
                 echo "Options:"
                 echo "  --force           Force re-download even if file exists"
-                echo "  --no-speed-test   Skip speed test, use default mirror"
                 echo "  --url URL         Download from specific URL"
                 echo "  --help            Show this help message"
                 exit 0
@@ -211,11 +163,9 @@ main() {
     if [ -n "$custom_url" ]; then
         download_url="$custom_url"
         info "Using custom URL: $custom_url"
-    elif [ "$use_fastest" = true ]; then
-        download_url=$(find_fastest_mirror)
     else
-        download_url="https://archive.apache.org/dist/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz"
-        info "Using default mirror"
+        download_url=$(get_download_url)
+        info "Using reliable mirror: $(echo "$download_url" | cut -d'/' -f3)"
     fi
     
     # Download the file
