@@ -46,6 +46,7 @@ This repository provides a **one-click automated installation** script for Apach
 # Clone and run installation
 git clone https://github.com/stephenbaraik/hadoop-wsl-installer.git && \
 cd hadoop-wsl-installer && \
+chmod +x install.sh && \
 ./install.sh
 ```
 
