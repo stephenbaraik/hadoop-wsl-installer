@@ -1,158 +1,63 @@
-<?xml version="1.0"?>
-<!--
-  Licensed to the Apache Software Foundation (ASF) under one or more
-  contributor license agreements.  See the NOTICE file distributed with
-  this work for additional information regarding copyright ownership.
-  The ASF licenses this file to You under the Apache License, Version 2.0
-  (the "License"); you may not use this file except in compliance with
-  the License.  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
--->
-
-<!-- YARN Configuration for WSL -->
+<?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <!-- ResourceManager hostname -->
     <property>
-        <n>yarn.resourcemanager.hostname</n>
-        <value>localhost</value>
-        <description>The hostname of the ResourceManager</description>
-    </property>
-    
-    <!-- ResourceManager Web UI -->
-    <property>
-        <n>yarn.resourcemanager.webapp.address</n>
-        <value>0.0.0.0:8088</value>
-        <description>The address of the ResourceManager web application</description>
-    </property>
-    
-    <!-- ResourceManager address -->
-    <property>
-        <n>yarn.resourcemanager.address</n>
-        <value>localhost:8032</value>
-        <description>The address of the applications manager interface in the ResourceManager</description>
-    </property>
-    
-    <!-- ResourceManager scheduler address -->
-    <property>
-        <n>yarn.resourcemanager.scheduler.address</n>
-        <value>localhost:8030</value>
-        <description>The address of the scheduler interface</description>
-    </property>
-    
-    <!-- ResourceManager resource tracker address -->
-    <property>
-        <n>yarn.resourcemanager.resource-tracker.address</n>
-        <value>localhost:8031</value>
-        <description>The address of the ResourceTracker interface</description>
-    </property>
-    
-    <!-- NodeManager auxiliary services -->
-    <property>
-        <n>yarn.nodemanager.aux-services</n>
+        <name>yarn.nodemanager.aux-services</name>
         <value>mapreduce_shuffle</value>
-        <description>Auxiliary services that should be run on NodeManager</description>
+        <description>Auxiliary services for NodeManager</description>
     </property>
-    
-    <!-- NodeManager auxiliary services classpath -->
     <property>
-        <n>yarn.nodemanager.aux-services.mapreduce_shuffle.class</n>
+        <name>yarn.nodemanager.aux-services.mapreduce_shuffle.class</name>
         <value>org.apache.hadoop.mapred.ShuffleHandler</value>
-        <description>The auxiliary service class to use for MapReduce shuffle</description>
+        <description>Shuffle service class</description>
     </property>
-    
-    <!-- NodeManager Web UI -->
     <property>
-        <n>yarn.nodemanager.webapp.address</n>
+        <name>yarn.resourcemanager.hostname</name>
+        <value>localhost</value>
+        <description>ResourceManager hostname</description>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.webapp.address</name>
+        <value>0.0.0.0:8088</value>
+        <description>ResourceManager Web UI address</description>
+    </property>
+    <property>
+        <name>yarn.nodemanager.webapp.address</name>
         <value>0.0.0.0:8042</value>
-        <description>NM Webapp address</description>
+        <description>NodeManager Web UI address</description>
     </property>
-    
-    <!-- NodeManager bind host -->
     <property>
-        <n>yarn.nodemanager.bind-host</n>
-        <value>0.0.0.0</value>
-        <description>The actual address the server will bind to</description>
-    </property>
-    
-    <!-- Memory settings for WSL -->
-    <property>
-        <n>yarn.nodemanager.resource.memory-mb</n>
+        <name>yarn.nodemanager.resource.memory-mb</name>
         <value>2048</value>
-        <description>Amount of physical memory, in MB, that can be allocated for containers</description>
+        <description>Amount of physical memory for containers</description>
     </property>
-    
-    <!-- CPU settings -->
     <property>
-        <n>yarn.nodemanager.resource.cpu-vcores</n>
-        <value>2</value>
-        <description>Number of vcores that can be allocated for containers</description>
-    </property>
-    
-    <!-- Container memory settings -->
-    <property>
-        <n>yarn.scheduler.minimum-allocation-mb</n>
-        <value>256</value>
-        <description>The minimum allocation for every container request at the ResourceManager</description>
-    </property>
-    
-    <property>
-        <n>yarn.scheduler.maximum-allocation-mb</n>
+        <name>yarn.scheduler.maximum-allocation-mb</name>
         <value>2048</value>
-        <description>The maximum allocation for every container request at the ResourceManager</description>
+        <description>Maximum memory allocation for containers</description>
     </property>
-    
-    <!-- Application classpath -->
     <property>
-        <n>yarn.application.classpath</n>
+        <name>yarn.nodemanager.vmem-check-enabled</name>
+        <value>false</value>
+        <description>Disable virtual memory checking</description>
+    </property>
+    <property>
+        <name>yarn.nodemanager.pmem-check-enabled</name>
+        <value>false</value>
+        <description>Disable physical memory checking</description>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.scheduler.class</name>
+        <value>org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler</value>
+        <description>ResourceManager scheduler class</description>
+    </property>
+    <property>
+        <name>yarn.nodemanager.env-whitelist</name>
+        <value>JAVA_HOME,HADOOP_COMMON_HOME,HADOOP_HDFS_HOME,HADOOP_CONF_DIR,CLASSPATH_PREPEND_DISTCACHE,HADOOP_YARN_HOME,HADOOP_MAPRED_HOME</value>
+        <description>Environment variables to pass to containers</description>
+    </property>
+    <property>
+        <name>yarn.application.classpath</name>
         <value>$HADOOP_CONF_DIR,$HADOOP_COMMON_HOME/share/hadoop/common/*,$HADOOP_COMMON_HOME/share/hadoop/common/lib/*,$HADOOP_HDFS_HOME/share/hadoop/hdfs/*,$HADOOP_HDFS_HOME/share/hadoop/hdfs/lib/*,$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/*,$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/lib/*,$HADOOP_YARN_HOME/share/hadoop/yarn/*,$HADOOP_YARN_HOME/share/hadoop/yarn/lib/*</value>
-        <description>Classpath for typical applications</description>
-    </property>
-    
-    <!-- Log settings -->
-    <property>
-        <n>yarn.log-aggregation-enable</n>
-        <value>true</value>
-        <description>Whether to enable log aggregation</description>
-    </property>
-    
-    <!-- NodeManager log dirs -->
-    <property>
-        <n>yarn.nodemanager.log-dirs</n>
-        <value>/opt/hadoop/logs/userlogs</value>
-        <description>Where to store container logs</description>
-    </property>
-    
-    <!-- Timeline service settings -->
-    <property>
-        <n>yarn.timeline-service.enabled</n>
-        <value>false</value>
-        <description>Indicate to clients whether Timeline service is enabled or not</description>
-    </property>
-    
-    <!-- Resource calculation settings -->
-    <property>
-        <n>yarn.nodemanager.vmem-check-enabled</n>
-        <value>false</value>
-        <description>Whether virtual memory limits will be enforced for containers</description>
-    </property>
-    
-    <property>
-        <n>yarn.nodemanager.pmem-check-enabled</n>
-        <value>false</value>
-        <description>Whether physical memory limits will be enforced for containers</description>
-    </property>
-    
-    <!-- Disk health checker settings -->
-    <property>
-        <n>yarn.nodemanager.disk-health-checker.enable</n>
-        <value>false</value>
-        <description>Enable/disable the disk health checker service</description>
+        <description>YARN application classpath</description>
     </property>
 </configuration>

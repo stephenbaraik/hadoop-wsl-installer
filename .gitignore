@@ -1,28 +1,43 @@
-# Hadoop distribution files
-*.tar.gz
-hadoop-*.tar.gz
+# Hadoop data directories
+/opt/hadoop-data/
+hadoop-data/
+data/
 
-# Logs
-*.log
+# Hadoop logs
 logs/
+*.log
+
+# SSH keys (if generated locally)
+.ssh/id_rsa*
 
 # Temporary files
 *.tmp
 *.temp
+/tmp/
 
-# IDE files
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor files
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# OS files
-.DS_Store
-Thumbs.db
+*~
 
 # Backup files
 *.backup
 *.bak
 
-# Downloaded packages
-downloads/
+# Environment specific
+.env
+.env.local
+
+# Downloaded Hadoop tarball (if any)
+hadoop-*.tar.gz

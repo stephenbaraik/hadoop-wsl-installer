@@ -1,133 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
-<!--
-  Licensed to the Apache Software Foundation (ASF) under one or more
-  contributor license agreements.  See the NOTICE file distributed with
-  this work for additional information regarding copyright ownership.
-  The ASF licenses this file to You under the Apache License, Version 2.0
-  (the "License"); you may not use this file except in compliance with
-  the License.  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
--->
-
-<!-- HDFS Configuration for WSL -->
 <configuration>
-    <!-- Replication factor for pseudo-distributed mode -->
     <property>
-        <n>dfs.replication</n>
+        <name>dfs.replication</name>
         <value>1</value>
         <description>Default block replication</description>
     </property>
-    
-    <!-- NameNode data directory -->
     <property>
-        <n>dfs.namenode.name.dir</n>
-        <value>file:///opt/hadoop/data/namenode</value>
-        <description>Path on the local filesystem where the NameNode stores the namespace and transaction logs</description>
+        <name>dfs.namenode.name.dir</name>
+        <value>/opt/hadoop/data/namenode</value>
+        <description>NameNode directory for namespace and transaction logs</description>
     </property>
-    
-    <!-- DataNode data directory -->
     <property>
-        <n>dfs.datanode.data.dir</n>
-        <value>file:///opt/hadoop/data/datanode</value>
-        <description>Comma separated list of paths on the local filesystem where DataNode stores its blocks</description>
+        <name>dfs.datanode.data.dir</name>
+        <value>/opt/hadoop/data/datanode</value>
+        <description>DataNode directory</description>
     </property>
-    
-    <!-- NameNode Web UI configuration -->
     <property>
-        <n>dfs.namenode.http-address</n>
+        <name>dfs.namenode.http-address</name>
         <value>0.0.0.0:9870</value>
-        <description>The address and port the NameNode web ui should bind to</description>
+        <description>NameNode Web UI address</description>
     </property>
-    
-    <!-- Secondary NameNode Web UI -->
     <property>
-        <n>dfs.namenode.secondary.http-address</n>
-        <value>0.0.0.0:9868</value>
-        <description>The secondary namenode http server address and port</description>
-    </property>
-    
-    <!-- DataNode Web UI -->
-    <property>
-        <n>dfs.datanode.http.address</n>
+        <name>dfs.datanode.http.address</name>
         <value>0.0.0.0:9864</value>
-        <description>The datanode http server address and port</description>
+        <description>DataNode Web UI address</description>
     </property>
-    
-    <!-- DataNode IPC address -->
     <property>
-        <n>dfs.datanode.address</n>
-        <value>0.0.0.0:9866</value>
-        <description>The datanode server address and port for data transfer</description>
-    </property>
-    
-    <!-- DataNode IPC address -->
-    <property>
-        <n>dfs.datanode.ipc.address</n>
-        <value>0.0.0.0:9867</value>
-        <description>The datanode ipc server address and port</description>
-    </property>
-    
-    <!-- Block size (128MB) -->
-    <property>
-        <n>dfs.blocksize</n>
-        <value>134217728</value>
-        <description>The default block size for new files, in bytes</description>
-    </property>
-    
-    <!-- Permissions settings for WSL -->
-    <property>
-        <n>dfs.permissions.enabled</n>
-        <value>false</value>
-        <description>If true, enable permission checking in HDFS</description>
-    </property>
-    
-    <!-- WebHDFS enabled -->
-    <property>
-        <n>dfs.webhdfs.enabled</n>
+        <name>dfs.webhdfs.enabled</name>
         <value>true</value>
-        <description>Enable WebHDFS (REST API) in Namenodes and Datanodes</description>
+        <description>Enable WebHDFS</description>
     </property>
-    
-    <!-- Safe mode settings -->
     <property>
-        <n>dfs.namenode.safemode.threshold-pct</n>
-        <value>0.9f</value>
-        <description>Specifies the percentage of blocks that should satisfy the minimal replication requirement</description>
-    </property>
-    
-    <!-- Heartbeat settings -->
-    <property>
-        <n>dfs.heartbeat.interval</n>
-        <value>3</value>
-        <description>Determines datanode heartbeat interval in seconds</description>
-    </property>
-    
-    <!-- Client settings -->
-    <property>
-        <n>dfs.client.use.datanode.hostname</n>
+        <name>dfs.permissions.enabled</name>
         <value>false</value>
-        <description>Whether clients should use datanode hostnames when connecting to datanodes</description>
+        <description>Enable HDFS permissions (disabled for single-user setup)</description>
     </property>
-    
-    <!-- Namenode checkpoint settings -->
     <property>
-        <n>dfs.namenode.checkpoint.period</n>
-        <value>3600</value>
-        <description>The number of seconds between two periodic checkpoints</description>
+        <name>dfs.namenode.checkpoint.dir</name>
+        <value>/opt/hadoop/data/checkpoint</value>
+        <description>Secondary NameNode checkpoint directory</description>
     </property>
-    
-    <!-- Trash settings -->
     <property>
-        <n>fs.trash.interval</n>
-        <value>1440</value>
-        <description>Number of minutes after which the checkpoint gets deleted</description>
+        <name>dfs.namenode.secondary.http-address</name>
+        <value>0.0.0.0:9868</value>
+        <description>Secondary NameNode Web UI address</description>
+    </property>
+    <property>
+        <name>dfs.client.use.datanode.hostname</name>
+        <value>true</value>
+        <description>Use datanode hostname for client connections</description>
+    </property>
+    <property>
+        <name>dfs.datanode.use.datanode.hostname</name>
+        <value>true</value>
+        <description>Use datanode hostname for datanode connections</description>
     </property>
 </configuration>
