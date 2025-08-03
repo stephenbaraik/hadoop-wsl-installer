@@ -45,11 +45,12 @@ This repository provides a **one-click automated installation** script for Apach
 # Clone and run in one go (RECOMMENDED)
 git clone https://github.com/stephenbaraik/hadoop-wsl-installer.git && \
 cd hadoop-wsl-installer && \
+chmod +x fix-line-endings.sh && \
 ./fix-line-endings.sh && \
 ./install.sh
 ```
 
-> **💡 Pro Tip**: The `fix-line-endings.sh` script ensures all scripts work correctly in WSL by converting Windows line endings to Unix format.
+> **💡 Pro Tip**: The `chmod +x fix-line-endings.sh` step is needed because Git doesn't preserve execute permissions across Windows/WSL filesystems.
 
 ### Step-by-Step Installation
 
@@ -58,7 +59,8 @@ cd hadoop-wsl-installer && \
 git clone https://github.com/stephenbaraik/hadoop-wsl-installer.git
 cd hadoop-wsl-installer
 
-# 2. Fix line endings and permissions
+# 2. Make fix-line-endings script executable and run it
+chmod +x fix-line-endings.sh
 ./fix-line-endings.sh
 
 # 3. Run installation
