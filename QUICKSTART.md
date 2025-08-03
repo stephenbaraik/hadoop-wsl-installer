@@ -11,17 +11,24 @@ wsl --install Ubuntu-22.04
 ### 2. Clone and Install Hadoop
 ```bash
 # In WSL terminal
-git clone https://github.com/yourusername/hadoop-wsl-installer.git
+git clone https://github.com/stephenbaraik/hadoop-wsl-installer.git
 cd hadoop-wsl-installer
 
-# Run the installer
+# Make scripts executable and run installer
+chmod +x install.sh scripts/*.sh
 ./install.sh
 ```
 
-### 3. Start Services
+### 3. Service Management
 ```bash
 # Start all Hadoop services
 ./scripts/start-services.sh
+
+# Stop all Hadoop services
+./scripts/stop-services.sh
+
+# Check service status
+./scripts/status.sh
 ```
 
 ### 4. Verify Installation
@@ -29,8 +36,8 @@ cd hadoop-wsl-installer
 # Run comprehensive tests
 ./scripts/test-installation.sh
 
-# Check service status
-./scripts/status.sh
+# Run examples and demonstrations
+./scripts/examples.sh
 ```
 
 ## 🌐 Access Web UIs
