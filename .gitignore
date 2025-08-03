@@ -1,0 +1,28 @@
+# Hadoop distribution files
+*.tar.gz
+hadoop-*.tar.gz
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.backup
+*.bak
+
+# Downloaded packages
+downloads/
