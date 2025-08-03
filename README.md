@@ -29,7 +29,7 @@ A **robust, one-click Hadoop installation script** for Windows Subsystem for Lin
 ### Option 1: Clone and Install
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/hadoop-wsl-installer.git
+git clone https://github.com/stephenbaraik/hadoop-wsl-installer.git
 cd hadoop-wsl-installer
 
 # Make the installer executable
