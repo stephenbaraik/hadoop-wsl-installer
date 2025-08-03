@@ -55,6 +55,7 @@ update_system() {
 # Setup Java
 setup_java() {
     log "Setting up Java 11..."
+    chmod +x scripts/setup-java.sh
     ./scripts/setup-java.sh
     
     # Verify Java installation
@@ -67,6 +68,7 @@ setup_java() {
 # Setup SSH
 setup_ssh() {
     log "Setting up SSH for passwordless authentication..."
+    chmod +x scripts/setup-ssh.sh
     ./scripts/setup-ssh.sh
     log "SSH configured successfully ✓"
 }
@@ -175,6 +177,7 @@ final_setup() {
     
     # Start services
     info "Starting Hadoop services..."
+    chmod +x scripts/start-services.sh
     ./scripts/start-services.sh
     
     # Wait a bit for services to start
@@ -182,6 +185,7 @@ final_setup() {
     
     # Run basic tests
     info "Running installation tests..."
+    chmod +x scripts/test-installation.sh
     ./scripts/test-installation.sh
     
     log "Installation completed successfully! ✓"
