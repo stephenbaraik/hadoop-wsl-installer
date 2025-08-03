@@ -83,9 +83,18 @@ setup_ssh() {
 install_hadoop() {
     log "Downloading and installing Hadoop ${HADOOP_VERSION}..."
     
-    # Create hadoop directory
-    sudo mkdir -p ${HADOOP_HOME}
-    sudo chown ${HADOOP_USER}:${HADOOP_USER} ${HADOOP_HOME}
+    # Check if Hadoop is already installed
+    if [ -d "${HADOOP_HOME}" ] && [ -f "${HADOOP_HOME}/bin/hadoop" ]; then
+        warning "Hadoop appears to be already installed at ${HADOOP_HOME}"
+        read -p "Do you want to reinstall? This will remove the existing installation. (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            info "Skipping Hadoop installation"
+            return 0
+        fi
+        info "Proceeding with reinstallation..."
+        sudo rm -rf ${HADOOP_HOME}
+    fi
     
     # Download Hadoop if not already present
     if [ ! -f "hadoop-${HADOOP_VERSION}.tar.gz" ]; then
@@ -115,8 +124,11 @@ install_hadoop() {
         exit 1
     fi
     
-    mv hadoop-${HADOOP_VERSION}/* ${HADOOP_HOME}/
-    rmdir hadoop-${HADOOP_VERSION}
+    # Create Hadoop directory and move extracted files
+    info "Installing Hadoop to ${HADOOP_HOME}..."
+    sudo mkdir -p ${HADOOP_HOME}
+    sudo cp -r hadoop-${HADOOP_VERSION}/* ${HADOOP_HOME}/
+    rm -rf hadoop-${HADOOP_VERSION}
     
     # Set ownership
     sudo chown -R ${HADOOP_USER}:${HADOOP_USER} ${HADOOP_HOME}
