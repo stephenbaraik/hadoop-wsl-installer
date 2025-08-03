@@ -107,6 +107,11 @@ After installation, verify all services are running:
 ./scripts/test-installation.sh
 ```
 
+Or check services manually:
+```bash
+$JAVA_HOME/bin/jps
+```
+
 You should see all 6 services running:
 - ✅ **NameNode** - HDFS master service
 - ✅ **DataNode** - HDFS storage service  
@@ -114,6 +119,11 @@ You should see all 6 services running:
 - ✅ **ResourceManager** - YARN cluster manager
 - ✅ **NodeManager** - YARN task executor
 - ✅ **JobHistoryServer** - MapReduce job history
+
+**✅ TESTED SUCCESSFULLY ON:**
+- ✅ Ubuntu 24.04 WSL2 
+- ✅ Alpine Linux WSL
+- ✅ Various minimal WSL environments
 
 ### Test Basic HDFS Operations
 
