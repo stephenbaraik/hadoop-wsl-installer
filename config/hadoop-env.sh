@@ -86,8 +86,7 @@ export HADOOP_CLIENT_OPTS="-Xmx512m $HADOOP_CLIENT_OPTS"
 # JVM settings for WSL environment
 export HADOOP_OPTS="${HADOOP_OPTS} -server"
 export HADOOP_OPTS="${HADOOP_OPTS} -XX:+UseG1GC"
-export HADOOP_OPTS="${HADOOP_OPTS} -XX:+PrintGCDetails -XX:+PrintGCTimeStamps"
-export HADOOP_OPTS="${HADOOP_OPTS} -Xloggc:/opt/hadoop/logs/gc.log"
+export HADOOP_OPTS="${HADOOP_OPTS} -Xlog:gc*:/opt/hadoop/logs/gc.log"
 
 # Disable IPv6 for better WSL compatibility
 export HADOOP_OPTS="${HADOOP_OPTS} -Djava.net.preferIPv4Stack=true"

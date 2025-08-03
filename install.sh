@@ -147,6 +147,15 @@ configure_hadoop() {
     cp config/yarn-site.xml ${HADOOP_HOME}/etc/hadoop/
     cp config/hadoop-env.sh ${HADOOP_HOME}/etc/hadoop/
     
+    # Fix deprecated JVM options in existing Hadoop installation for Java 11+ compatibility
+    info "Fixing deprecated JVM options for Java 11+ compatibility..."
+    if [ -f "${HADOOP_HOME}/etc/hadoop/hadoop-env.sh" ]; then
+        # Remove deprecated GC logging options that cause Java 11+ errors
+        sed -i 's/-XX:+PrintGCDetails//g' ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
+        sed -i 's/-XX:+PrintGCTimeStamps//g' ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
+        sed -i 's/-Xloggc:/-Xlog:gc*:/g' ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
+    fi
+    
     # Create data directories
     mkdir -p ${HADOOP_HOME}/data/namenode
     mkdir -p ${HADOOP_HOME}/data/datanode
